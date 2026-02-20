@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240">
+  <!-- Background -->
+  <rect width="360" height="240" fill="#1a365d"/>
+
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#48bb78"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="160" fill="url(#skyGrad)"/>
+
+  <!-- Sun -->
+  <circle cx="300" cy="50" r="35" fill="#f6e05e"/>
+  <circle cx="300" cy="50" r="28" fill="#ecc94b"/>
+
+  <!-- Clouds -->
+  <g fill="#ffffff" opacity="0.9">
+    <ellipse cx="80" cy="40" rx="30" ry="15"/>
+    <ellipse cx="60" cy="45" rx="20" ry="12"/>
+    <ellipse cx="100" cy="45" rx="20" ry="12"/>
+  </g>
+  <g fill="#ffffff" opacity="0.8">
+    <ellipse cx="200" cy="70" rx="25" ry="12"/>
+    <ellipse cx="180" cy="75" rx="18" ry="10"/>
+    <ellipse cx="220" cy="75" rx="18" ry="10"/>
+  </g>
+
+  <!-- Ground -->
+  <rect y="160" width="360" height="80" fill="#276749"/>
+
+  <!-- Grass texture -->
+  <g fill="#2f855a">
+    <rect x="0" y="160" width="360" height="10"/>
+  </g>
+
+  <!-- House -->
+  <rect x="60" y="100" width="80" height="60" fill="#e53e3e"/>
+  <polygon points="100,60 50,100 150,100" fill="#742a2a"/>
+  <rect x="85" y="120" width="30" height="40" fill="#744210"/>
+  <circle cx="108" cy="145" r="3" fill="#d69e2e"/>
+  <rect x="65" y="110" width="15" height="15" fill="#90cdf4"/>
+  <rect x="120" y="110" width="15" height="15" fill="#90cdf4"/>
+
+  <!-- Tree -->
+  <rect x="230" y="120" width="20" height="40" fill="#744210"/>
+  <circle cx="240" cy="100" r="35" fill="#48bb78"/>
+  <circle cx="225" cy="110" r="25" fill="#38a169"/>
+  <circle cx="255" cy="110" r="25" fill="#38a169"/>
+
+  <!-- Flowers -->
+  <g>
+    <circle cx="180" cy="190" r="8" fill="#f687b3"/>
+    <circle cx="180" cy="190" r="4" fill="#faf089"/>
+    <rect x="178" y="190" width="4" height="15" fill="#68d391"/>
+  </g>
+  <g>
+    <circle cx="300" cy="200" r="8" fill="#fbb6ce"/>
+    <circle cx="300" cy="200" r="4" fill="#f6e05e"/>
+    <rect x="298" y="200" width="4" height="12" fill="#68d391"/>
+  </g>
+  <g>
+    <circle cx="40" cy="195" r="8" fill="#fc8181"/>
+    <circle cx="40" cy="195" r="4" fill="#faf089"/>
+    <rect x="38" y="195" width="4" height="15" fill="#68d391"/>
+  </g>
+
+  <!-- Bird -->
+  <g fill="#2d3748">
+    <path d="M270 30 Q280 25 290 30 Q285 32 280 30 Q275 32 270 30"/>
+  </g>
+
+  <!-- Fence -->
+  <g fill="#d69e2e">
+    <rect x="145" y="175" width="4" height="25"/>
+    <rect x="160" y="175" width="4" height="25"/>
+    <rect x="175" y="175" width="4" height="25"/>
+    <rect x="143" y="180" width="40" height="3"/>
+    <rect x="143" y="190" width="40" height="3"/>
+  </g>
+</svg>

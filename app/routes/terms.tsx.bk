@@ -1,0 +1,91 @@
+import type { Route } from "./+types/terms";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Terms and Conditions - NYK Labs" },
+    { name: "description", content: "Terms and conditions for NYK Labs." },
+  ];
+}
+
+export default function Terms() {
+  return (
+    <main>
+      <div className="content-page card">
+        <h1>Terms and Conditions</h1>
+        <p className="small">Last updated: 12/1/2025</p>
+
+        <section>
+          <p>This agreement ("Terms") applies between you, the user of the nyklabs.com website and any associated services (collectively, the "Site"), and NYK Labs ("we", "us" or "our"), the owner and provider of the Site. By accessing or using the Site, you agree to comply with and be bound by these Terms. If you do not agree with these Terms, you should discontinue use of the Site immediately.</p>
+        </section>
+
+        <section>
+          <h2>1. Definitions and Interpretation</h2>
+          <p>In this Agreement:</p>
+          <ul>
+            <li><strong>"Content"</strong> means any text, graphics, images, audio, video, software, data compilations and any other form of information on the Site;</li>
+            <li><strong>"Service"</strong> means any online facilities, tools, services or information that NYK Labs makes available through the Site now or in the future;</li>
+            <li><strong>"System"</strong> means any online communications infrastructure that NYK Labs makes available through the Site, including but not limited to web forms, email links, message boards, and live chat;</li>
+            <li><strong>"User"</strong> means any third party that accesses the Site and is not employed by NYK Labs acting in the course of their employment;</li>
+            <li><strong>"Web Site"</strong> means the website that you are currently using (nyklabs.com) and all subdomains thereof.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>2. Intellectual Property</h2>
+          <p>All Content included on the Site, unless uploaded by Users, including but not limited to text, graphics, logos, icons, images, videos, software, and code is the property of NYK Labs or its licensors and is protected by applicable intellectual property laws. You may not copy, reproduce, distribute, or otherwise reuse any Content except as expressly provided in these Terms or with written permission from NYK Labs.</p>
+        </section>
+
+        <section>
+          <h2>3. Links to Other Websites</h2>
+          <p>This Site may contain links to external websites. Unless expressly stated, these sites are not under the control of NYK Labs, and we are not responsible for the content, privacy practices, or availability of those sites. The inclusion of a link does not imply endorsement.</p>
+        </section>
+
+        <section>
+          <h2>4. Linking to This Website</h2>
+          <p>Anyone wishing to place a hyperlink to the home page of nyklabs.com may do so without prior permission. Deep linking (i.e., links to specific pages within the Site) requires express written permission from NYK Labs. Contact us at the email address below for approval.</p>
+        </section>
+
+        <section>
+          <h2>5. Privacy</h2>
+          <p>For the purposes of applicable data protection laws, NYK Labs will process any personal data you provide in accordance with our <a href="/privacy">Privacy Policy</a>. By using the Site, you consent to such processing and warrant that all data you provide is accurate.</p>
+        </section>
+
+        <section>
+          <h2>6. Disclaimers</h2>
+          <p>NYK Labs makes no warranty that the Site will meet your requirements, be of satisfactory quality, be fit for a particular purpose, or operate without interruptions. No part of the Site is intended to constitute advice, and you should not rely on any Content without independent verification. All Content is provided "as is" and "as available," without warranties of any kind.</p>
+        </section>
+
+        <section>
+          <h2>7. Availability of the Website</h2>
+          <p>The Site is provided on an "as available" and "as is" basis. NYK Labs disclaims all liability for any disruption or non-availability, including outages due to technical failures, host issues, internet connectivity problems, natural events, or other causes beyond our control.</p>
+        </section>
+
+        <section>
+          <h2>8. Limitation of Liability</h2>
+          <p>To the maximum extent permitted by law, NYK Labs shall not be liable for any direct, indirect, incidental, special, or consequential damages arising out of or in connection with your use of the Site or its Content. Users are responsible for any decisions, actions, or outcomes based on their use of the Site.</p>
+          <p>Nothing in these Terms excludes liability for death or personal injury resulting from NYK Labs' negligence.</p>
+        </section>
+
+        <section>
+          <h2>9. No Waiver</h2>
+          <p>If NYK Labs fails to enforce any right or provision in these Terms, that failure will not constitute a waiver of such right or provision in the future.</p>
+        </section>
+
+        <section>
+          <h2>10. Changes to These Terms</h2>
+          <p>NYK Labs may revise these Terms at any time. The updated terms will be effective when posted on this page. Your continued use of the Site after such changes indicates your acceptance of the new Terms.</p>
+        </section>
+
+        <section>
+          <h2>11. Notices</h2>
+          <p>All notices and communications should be given to NYK Labs by email at <a href="mailto:communications@nyklabs.com">communications@nyklabs.com</a>. Notices will be considered received as follows: within three business days after mailing if sent by postal mail, or on the same business day if sent by email on a business day.</p>
+        </section>
+
+        <section>
+          <h2>12. Governing Law and Jurisdiction</h2>
+          <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which NYK Labs is incorporated or otherwise operates, without regard to its conflict of law principles. You agree to submit to the exclusive jurisdiction of the courts located in that jurisdiction for any disputes arising from these Terms or your use of the Site.</p>
+        </section>
+      </div>
+    </main>
+  );
+}

@@ -1,87 +1,83 @@
-# Welcome to React Router!
+# NYK Labs User Registration UI - Static SPA
 
-A modern, production-ready template for building full-stack React applications using React Router.
+This is a static Single Page Application (SPA) built with React Router 7, ready for cheap S3 hosting.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## What You Have
 
-## Features
+✅ **Beautiful card-based UI** with dark theme  
+✅ **Client-side routing** (no server needed)  
+✅ **Registration form** with API integration  
+✅ **Multiple pages**: Home, Hashed Lierre, Registration, FAQ  
+✅ **Fully static** - perfect for S3/CloudFront hosting
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
-
-```bash
-npm install
-```
+## Quick Start
 
 ### Development
-
-Start the development server with HMR:
-
 ```bash
 npm run dev
 ```
+Opens development server at http://localhost:5173
 
-Your application will be available at `http://localhost:5173`.
+### Production Build & Test
+```bash
+# Build the static files
+npm run build
 
-## Building for Production
+# Preview the production build locally
+npm run preview
+```
+Then open http://localhost:3000 - your SPA will work perfectly with all routes and the nice card layout!
 
-Create a production build:
+## Important Notes
 
+### ⚠️ DON'T Open index.html Directly!
+
+**Never** open `build/client/index.html` directly in your browser (file:// protocol). This will NOT work because:
+- SPAs need a web server to handle routing
+- JavaScript modules require proper CORS headers
+- Asset paths need to resolve correctly
+
+**Always** use `npm run preview` or deploy to a web server (like S3).
+
+## Deployment to S3
+
+See [S3_DEPLOYMENT.md](./S3_DEPLOYMENT.md) for complete deployment instructions.
+
+**Quick deployment:**
 ```bash
 npm run build
+aws s3 sync ./build/client s3://your-bucket-name --delete
 ```
 
-## Deployment
+## How It Works
 
-### Docker Deployment
+1. All routes (/, /registration, /faq, etc.) are handled client-side
+2. The app loads `index.html` + JavaScript bundles
+3. React Router hydrates the page and shows the correct route
+4. Navigation happens without page reloads
+5. Your beautiful card CSS layout renders perfectly
 
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
+## File Structure
 
 ```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+build/client/          # Production build (deploy this to S3)
+├── index.html         # Single HTML file
+├── assets/            # JS, CSS bundles
+├── nyk-logo.png
+└── mock1.png
+
+app/
+├── routes/            # Your pages
+│   ├── home.tsx
+│   ├── registration.tsx
+│   ├── faq.tsx
+│   └── hashed-lierre.tsx
+├── app.css            # Your beautiful card styling
+└── root.tsx           # Layout with nav & footer
 ```
 
-## Styling
+## Cost
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+Hosting on S3 + CloudFront: **< $1-2/month** for typical traffic
 
----
-
-Built with ❤️ using React Router.
+Enjoy your cheap, fast, beautiful SPA! 🚀

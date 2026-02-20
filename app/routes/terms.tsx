@@ -1,0 +1,205 @@
+import type { Route } from "./+types/terms";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Terms and Conditions - NYK Labs" },
+    { name: "description", content: "Terms and conditions for NYK Labs." },
+  ];
+}
+
+export default function Terms() {
+  return (
+    <main>
+      <div className="content-page card">
+        <h1>Terms of Use</h1>
+        <p className="small">Last Update Date: 2/14/2026</p>
+
+        <section>
+          <p>These terms of use ("Terms") are entered into by and between you or the entity you represent ("you", "your", or "user") and Nyk Labs, a LLC with its registered address at 10419 NE 32 PL E104, Bellevue, WA 98004 (the "Company", "us", "our", or "we") and govern your access to and use of NykLabs.com (including all top-level domain and subdomain pages) (the "Site") and the technology based solution ("NykLabs") (collectively, the "Product(s)").</p>
+          <p><strong>THESE TERMS CONTAINS AN ARBITRATION CLAUSE WHICH WILL, SUBJECT TO THE COMPANY'S DISCRETION, MAY REQUIRE DISPUTES BETWEEN YOU AND THE COMPANY TO BE SUBMITTED TO BINDING AND FINAL ARBITRATION. UNLESS YOU OPT OUT OF ARBITRATION: (1) YOU WILL ONLY BE PERMITTED TO PURSUE CLAIMS AND SEEK RELIEF AGAINST US ON AN INDIVIDUAL BASIS, NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY CLASS OR REPRESENTATIVE ACTION OR PROCEEDING; AND (2) YOU ARE WAIVING YOUR RIGHT TO SEEK RELIEF IN A COURT OF LAW AND TO HAVE A JURY TRIAL ON YOUR CLAIMS.</strong></p>
+        </section>
+
+        <section>
+          <h2>Acceptance of the Terms</h2>
+          <p>Please read the Terms carefully before accessing the Site or using the Products. By using the Product or by clicking to accept or agree to the Terms when this option is made available to you, you accept and agree to be bound and abide by these Terms and our Privacy Policy, found at <a href="/privacy">https://www.nyklabs.com/privacy</a>, incorporated herein by reference. If you do not want to agree to these Terms or the Privacy Policy, you must not access or use the Product.</p>
+        </section>
+
+        <section>
+          <h2>Eligibility</h2>
+          <p>This Product is offered and available to users who are at least 18 years of age or qualify as an adult in your country of residence. Age exception is given for playing the "daily puzzle" game, which does not impose an age limit. By using the Product and agreeing to these Terms, you represent and warrant that:</p>
+          <ul>
+            <li>You are of lawful age, and are lawfully able to enter into contracts. If you are entering into this agreement for an entity, such as the company you work for, you represent and warrant that you have legal authority to bind that entity to these Terms.</li>
+            <li>Neither you nor any person that owns or controls you is subject to sanctions or otherwise designated on any list of prohibited or restricted parties, including but not limited to the lists maintained by the United Nations Security Council, the U.S. Government (e.g., the Specially Designated Nationals List and Foreign Sanctions Evaders List of the U.S. Department of Treasury and the Entity List of the U.S. Department of Commerce), the European Union or its Member States, or other applicable government authority.</li>
+            <li>If you do not meet all of these requirements, you must not access or use the Product.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Changes to the Terms of Use</h2>
+          <p>We may revise and update these Terms from time to time in our sole discretion. All changes are effective immediately when we post them, and apply to all access to and use of the Product thereafter. However, any changes to the dispute resolution provisions set out in Governing Law and Jurisdiction will not apply to any disputes for which the parties have actual notice on or before the date the change is posted on the Product.</p>
+          <p>Your continued use of the Product following the posting of revised Terms means that you accept and agree to the changes. You are expected to check this page frequently so you are aware of any changes, as they are binding on you.</p>
+        </section>
+
+        <section>
+          <h2>Availability</h2>
+          <p>We reserve the right to withdraw or amend this Product, and any service or material we provide on the Product, in our sole discretion without notice. We will not be liable if for any reason all or any part of the Product is unavailable at any time or for any period. From time to time, we may restrict access to some parts of the Product, or the entire Product, to users, including registered users.</p>
+          <p>You are responsible for:</p>
+          <ul>
+            <li>Making all arrangements necessary for you to have access to the Product.</li>
+            <li>Ensuring that all persons who access the Product through your internet connection are aware of these Terms and comply with them.</li>
+          </ul>
+          <p>To access the Product or some of the resources it offers, you may be asked to provide certain registration details or other information. It is a condition of your use of the Product that all the information you provide is correct, current, and complete. You agree that all information you provide to register with this Product or otherwise, including but not limited to through the use of any interactive features on the Product, is governed by our Privacy Policy, found at <a href="/privacy">http://www.nyklabs.com/privacy</a>, and you consent to all actions we take with respect to your information consistent with our Privacy Policy.</p>
+        </section>
+
+        <section>
+          <h2>Feedback</h2>
+          <p>We welcome feedback, comments, ideas, and suggestions for improvements to the Products ("Feedback"). You grant to us a non-exclusive, worldwide, perpetual, irrevocable, fully-paid, royalty-free, sublicensable and transferable license under any and all intellectual property rights that you own or control to use, copy, modify, create derivative works based upon and otherwise exploit the Feedback for any purpose.</p>
+        </section>
+
+        <section>
+          <h2>Sandbox</h2>
+          <p>We may provide access to a sandbox environment, testnet, or other pre-release version of our Products ("Sandbox Environment") for the purpose of testing and evaluation. You understand that the Sandbox Environment is provided on an "as-is" and "as-available" basis, may contain bugs or errors, and is not intended for production use. Features may change, break, or be discontinued at any time without notice. By accessing or using the Sandbox Environment, you do so voluntarily and at your own risk. You agree to provide feedback, suggestions, or reports on issues as reasonably requested. You acknowledge and agree that we may use this feedback without any obligation to you. To the fullest extent permitted by law, we disclaim all liability arising out of or related to your use of the Sandbox Environment. This includes any loss of data, service interruptions, or errors encountered in connection with sandbox features. We may suspend, restrict, or terminate your access to the Sandbox Environment at any time, with or without notice and without liability to you.</p>
+        </section>
+
+        <section>
+          <h2>Intellectual Property Rights</h2>
+          <p>The Products and their entire contents, features, and functionality (including but not limited to all information, software, text, displays, images, video, and audio, and the design, selection, and arrangement thereof), are owned by the Company, its licensors, or other providers of such material and are protected by United States and international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws.</p>
+          <p>These Terms permit you to use the Product for your personal, non-commercial use only. You must not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our Product, except as follows:</p>
+          <ul>
+            <li>Your computer may temporarily store copies of such materials in RAM incidental to your accessing and viewing those materials.</li>
+            <li>You may store files that are automatically cached by your Web browser for display enhancement purposes.</li>
+            <li>You may print one copy of a reasonable number of pages of the Product for your own personal, non-commercial use and not for further reproduction, publication, or distribution.</li>
+            <li>If we provide desktop, mobile, or other applications for download, you may download a single copy to your computer or mobile device solely for your own personal, non-commercial use, provided you agree to be bound by our end user license agreement for such applications.</li>
+            <li>If we provide social media features with certain content, you may take such actions as are enabled by such features or the platform hosting those features.</li>
+          </ul>
+          <p>You must not:</p>
+          <ul>
+            <li>Modify copies of any materials from this site.</li>
+            <li>Use any illustrations, photographs, video or audio sequences, or any graphics separately from the accompanying text.</li>
+            <li>Delete or alter any copyright, trademark, or other proprietary rights notices from copies of materials from this site.</li>
+            <li>You must not access or use for any commercial purposes any part of the Product or any services or materials available through the Product.</li>
+          </ul>
+          <p>If you wish to make any use of material on the Product other than that set out in this section, please address your request to: <a href="mailto:communications@nyklabs.com">communications@nyklabs.com</a></p>
+          <p>If you print, copy, modify, download, or otherwise use or provide any other person with access to any part of the Product in breach of the Terms, your right to use the Product will stop immediately and you must, at our option, return or destroy any copies of the materials you have made. No right, title, or interest in or to the Product or any content on the Product is transferred to you, and all rights not expressly granted are reserved by the Company. Any use of the Product not expressly permitted by these Terms is a breach of these Terms and may violate copyright, trademark, and other laws.</p>
+        </section>
+
+        <section>
+          <h2>Use of Trademarks</h2>
+          <p>The Company name, the Company logo, and all related names, logos, product and service names, designs, and slogans are trademarks of the Company or its affiliates or licensors. You must not use such marks without the prior written permission of the Company. All other names, logos, product and service names, designs, and slogans on this Product are the trademarks of their respective owners. Furthermore, you will not misrepresent or embellish the relationship between us and you (including by expressing or implying that we sponsor, endorse, or contribute to you or your business endeavors). You will not imply any relationship or affiliation between us and you.</p>
+        </section>
+
+        <section>
+          <h2>Prohibited Uses</h2>
+          <p>You may use the Product only for lawful purposes and in accordance with these Terms. The Company grants to you a limited, non-exclusive, non-transferable, non-sublicensable, fully-revocable right to use the Site for the purposes of accessing and using the Products strictly in accordance with these Terms. Any use of the Site or Products other than as specifically authorized in these Terms, without our prior written permission, is strictly prohibited and may result in immediate termination of your license to use the Products.</p>
+          <p>You agree not to use the Product:</p>
+          <ul>
+            <li>In any way that violates any applicable federal, state, local, or international law or regulation (including, without limitation, any laws regarding the export of data or software to and from the US or other countries).</li>
+            <li>For the purpose of exploiting, harming, or attempting to exploit or harm minors in any way by exposing them to inappropriate content, asking for personally identifiable information, or otherwise.</li>
+            <li>To transmit, or procure the sending of, any advertising or promotional material without our prior written consent, including any "junk mail", "chain letter", "spam", or any other similar solicitation.</li>
+            <li>To impersonate or attempt to impersonate the Company, a Company employee, another user, or any other person or entity (including, without limitation, by using email addresses or screen names associated with any of the foregoing).</li>
+            <li>To engage in any other conduct that restricts or inhibits anyone's use or enjoyment of the Product, or which, as determined by us, may harm the Company or users of the Product or expose them to liability.</li>
+          </ul>
+          <p>Additionally, you agree not to:</p>
+          <ul>
+            <li>Use the Product in any manner that could disable, overburden, damage, or impair the site or interfere with any other party's use of the Product, including their ability to engage in real time activities through the Product.</li>
+            <li>Use any robot, spider, or other automatic device, process, or means to access the Product for any purpose, including monitoring or copying any of the material on the Product.</li>
+            <li>Use any manual process to monitor or copy any of the material on the Product or for any other unauthorized purpose without our prior written consent.</li>
+            <li>Use any device, software, or routine that interferes with the proper working of the Product.</li>
+            <li>Introduce any viruses, trojan horses, worms, logic bombs, or other material that is malicious or technologically harmful.</li>
+            <li>Attempt to gain unauthorized access to, interfere with, damage, or disrupt any parts of the Product, the server on which the Product is stored, or any server, computer, or database connected to the Product.</li>
+            <li>Attack the Product via a denial-of-service attack or a distributed denial-of-service attack.</li>
+            <li>Otherwise attempt to interfere with the proper working of the Product.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Monitoring and Enforcement; Termination</h2>
+          <p>We have the right to:</p>
+          <ul>
+            <li>Take appropriate legal action, including without limitation, referral to law enforcement, for any illegal or unauthorized use of the Product.</li>
+            <li>Terminate or suspend your access to all or part of the Product for any or no reason, including without limitation, any violation of these Terms.</li>
+          </ul>
+          <p>Without limiting the foregoing, we have the right to fully cooperate with any law enforcement authorities or court order requesting or directing us to disclose the identity or other information of anyone posting any materials on or through the Product. YOU WAIVE AND HOLD HARMLESS THE COMPANY AND ITS AFFILIATES, LICENSEES AND SERVICE PROVIDERS FROM ANY CLAIMS RESULTING FROM ANY ACTION TAKEN BY ANY OF THE FOREGOING PARTIES DURING, OR TAKEN AS A CONSEQUENCE OF, INVESTIGATIONS BY EITHER SUCH PARTIES OR LAW ENFORCEMENT AUTHORITIES.</p>
+          <p>However, we do not undertake to review material before it is posted on the Product, and cannot ensure prompt removal of objectionable material after it has been posted. Accordingly, we assume no liability for any action or inaction regarding transmissions, communications, or content provided by any user or third party. We have no liability or responsibility to anyone for performance or nonperformance of the activities described in this section.</p>
+        </section>
+
+        <section>
+          <h2>Reliance on Information Posted</h2>
+          <p>The information presented on or through the Product is made available solely for general information purposes. We do not warrant the accuracy, completeness, or usefulness of this information. Any reliance you place on such information is strictly at your own risk. We disclaim all liability and responsibility arising from any reliance placed on such materials by you or any other visitor to the Product, or by anyone who may be informed of any of its contents.</p>
+          <p>This Product may include content provided by third parties, including materials provided by other users, bloggers, and third-party licensors, syndicators, aggregators, and/or reporting services. All statements and/or opinions expressed in these materials, and all articles and responses to questions and other content, other than the content provided by the Company, are solely the opinions and the responsibility of the person or entity providing those materials. These materials do not necessarily reflect the opinion of the Company. We are not responsible, or liable to you or any third party, for the content or accuracy of any materials provided by any third parties.</p>
+        </section>
+
+        <section>
+          <h2>Third-Party Services</h2>
+          <p>The Products may incorporate, access, or provide links to third-party services, content, or functionality (collectively, "Third-Party Services"). These Third-Party Services are provided solely for your convenience and are not under the control of the Company. By using the Products, you acknowledge and agree that the Company makes no representations or warranties regarding the quality, availability, functionality, or legality of any Third-Party Services and disclaims all liability arising from your use of or reliance on them. Your use of any Third-Party Services is subject to the terms and conditions and privacy policies of the applicable third party. The Company does not endorse, and is not responsible for, any Third-Party Services, and your interactions with them are solely between you and the applicable third party.</p>
+        </section>
+
+        <section>
+          <h2>Disclaimer of Warranties</h2>
+          <p>You understand that we cannot and do not guarantee or warrant that files available for downloading from the internet or the Product will be free of viruses or other destructive code. You are responsible for implementing sufficient procedures and checkpoints to satisfy your particular requirements for anti-virus protection and accuracy of data input and output, and for maintaining a means external to our site for any reconstruction of any lost data. TO THE FULLEST EXTENT PROVIDED BY LAW, WE WILL NOT BE LIABLE FOR ANY LOSS OR DAMAGE CAUSED BY A DISTRIBUTED DENIAL-OF-SERVICE ATTACK, VIRUSES, OR OTHER TECHNOLOGICALLY HARMFUL MATERIAL THAT MAY INFECT YOUR COMPUTER EQUIPMENT, COMPUTER PROGRAMS, DATA, OR OTHER PROPRIETARY MATERIAL DUE TO YOUR USE OF THE SITE, NykLabs, PRODUCTS, OR ANY SERVICES OR ITEMS OBTAINED THROUGH THE WEBSITE OR TO YOUR DOWNLOADING OF ANY MATERIAL POSTED ON IT, OR ON ANY WEBSITE OR SERVICE LINKED TO IT.</p>
+          <p>YOUR USE OF THE SITE, ITS CONTENT, NykLabs, AND ANY SERVICES OR ITEMS OBTAINED THROUGH THE SITE IS AT YOUR OWN RISK. THE SITE, ITS CONTENT, NykLabs, AND ANY SERVICES OR ITEMS OBTAINED THROUGH THE SITE ARE PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT ANY WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. NEITHER THE COMPANY NOR ANY PERSON ASSOCIATED WITH THE COMPANY MAKES ANY WARRANTY OR REPRESENTATION WITH RESPECT TO THE COMPLETENESS, SECURITY, RELIABILITY, QUALITY, ACCURACY, OR AVAILABILITY OF THE SITE AND NykLabs. WITHOUT LIMITING THE FOREGOING, NEITHER THE COMPANY NOR ANYONE ASSOCIATED WITH THE COMPANY REPRESENTS OR WARRANTS THAT THE SITE, ITS CONTENT, NykLabs, OR ANY SERVICES OR ITEMS OBTAINED THROUGH THE WEBSITE WILL BE ACCURATE, RELIABLE, ERROR-FREE, OR UNINTERRUPTED, THAT DEFECTS WILL BE CORRECTED, THAT OUR SITE OR THE SERVER THAT MAKES IT AVAILABLE ARE FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS, OR THAT THE SITE, NykLabs, OR ANY SERVICES OR ITEMS OBTAINED THROUGH THE SITE WILL OTHERWISE MEET YOUR NEEDS OR EXPECTATIONS.</p>
+          <p>TO THE FULLEST EXTENT PROVIDED BY LAW, THE COMPANY HEREBY DISCLAIMS ALL WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY, NON-INFRINGEMENT, AND FITNESS FOR PARTICULAR PURPOSE. THE FOREGOING DOES NOT AFFECT ANY WARRANTIES THAT CANNOT BE EXCLUDED OR LIMITED UNDER APPLICABLE LAW.</p>
+        </section>
+
+        <section>
+          <h2>Acknowledgement of Risks</h2>
+          <p>You acknowledge that you are fully aware of all applicable laws and technical constraints relating to the distributed ledger technology, and to the Products. You acknowledge that you have been warned of the following associated risks and advised of the following recommendations:</p>
+          <p><strong>Regulatory.</strong> Distributed ledger technologies and related services are subject to continuous regulatory changes and scrutiny around the world, including but not limited to anti-money laundering and financial regulations. You acknowledge that NykLabs, including its availability, could be impacted by one or more regulatory requirements.</p>
+          <p><strong>Emerging Technology.</strong> Users understand that some of the technology supported or made available through NykLabs is new, untested, and not provided by the Company and therefore outside of the Company's control. Advances in cryptography, machine learning, and the development of quantum computers could present risks to blockchain networks, which could result in the theft or loss of data and digital assets. Other adverse changes in market forces or in the technology, broadly construed, may prevent or compromise the Company's performance under these Terms.</p>
+          <p><strong>Cybersecurity.</strong> Hackers or other groups or organizations may attempt to interfere with the Company's Products and information systems in several ways, including without limitation denial of service attacks, sybil attacks, side-channel attacks, spoofing, smurfing, malware attacks, or consensus-based attacks.</p>
+          <p><strong>Digital Assets &amp; Distributed Ledger Technology.</strong> All transactions created through NykLabs are confirmed and recorded on public distributed ledgers. Such networks are decentralized peer-to-peer networks run by independent third-parties, which the Company does not own, control or operate. We have no control over blockchain networks and, therefore, cannot and do not ensure that the transactions you broadcast on the Products will be confirmed and processed. You acknowledge that we do not store, send, or receive digital assets on your behalf and you agree that the transactions you configure through the Products may fail, or may be substantially delayed by the underlying blockchain networks. On occasions, the underlying protocol of a given dataset, transaction, or digital asset may change, which may have consequences on its key characteristics including but not limited to their availability, name, security, valuation value or the way it operates. Forks entail that forked transactions, data, and digital assets may be misdirected or replicated. In any such events, the Company may decide, at its discretion, to suspend support of the impacted digital asset for as long as the Company deems necessary. When it so decides, the Company will endeavor to give you advance notice, but may not be able to. You should keep yourself apprised of such events and make all necessary arrangements.</p>
+        </section>
+
+        <section>
+          <h2>Limitation on Liability</h2>
+          <p>TO THE FULLEST EXTENT PROVIDED BY LAW, IN NO EVENT AND UNDER NO CIRCUMSTANCES WILL THE COMPANY, ITS AFFILIATES, OR THEIR LICENSORS, SERVICE PROVIDERS, EMPLOYEES, AGENTS, OFFICERS, OR DIRECTORS BE LIABLE TO YOU OR ANY OTHER PERSON FOR DAMAGES OF ANY KIND, UNDER ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION, TORT, CONTRACT, STRICT LIABILITY, OR OTHERWISE), ARISING OUT OF OR IN CONNECTION WITH YOUR USE, OR INABILITY TO USE THE PRODUCTS, ANY WEBSITES LINKED TO THE PRODUCTS, ANY CONTENT ON THE PRODUCTS, INCLUDING ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO DAMAGES FOR BUSINESS INTERRUPTION, WORK STOPPAGE, EQUIPMENT FAILURE, ACCURACY OF RESULTS PAIN AND SUFFERING, EMOTIONAL DISTRESS, LOSS OF REVENUE, LOSS OF PROFITS, LOSS OF BUSINESS OR ANTICIPATED SAVINGS, LOSS OF USE, LOSS OF GOODWILL, LOSS OF DATA. THE FOREGOING DOES NOT AFFECT ANY LIABILITY THAT CANNOT BE EXCLUDED OR LIMITED UNDER APPLICABLE LAW.</p>
+        </section>
+
+        <section>
+          <h2>Indemnification</h2>
+          <p>To the fullest extent permitted by applicable laws, you agree to indemnify, defend, and hold harmless the Company as well as its affiliates and service providers, and each of their respective past, present, and future directors, officers, employees, consultants, agents, members, representatives, and each of their respective successors and assigns (the "Company Entities"), from and against any actual or alleged third party claims, disputes, demands, obligations, penalties, taxes, fees, interests, liabilities, damages, losses, and costs and expenses, including, without limitation, reasonable legal and accounting fees, of every kind and nature whatsoever, whether known or unknown, foreseen or unforeseen, matured or unmatured, or suspected or unsuspected, in law or equity, whether in tort, contract or otherwise (collectively, "Claims") arising out of, relating to or in any way connected with (i) your access to or use of the Products, (ii) third party services accessible via the Products, (iii) your negligence or wilful misconduct, (iv) your violation of the rights of a third party, or (v) your violation of these Terms or applicable law. You agree to promptly notify us of any third party Claims and cooperate with the Company Entities in defending such Claims. You further agree that the Company Entities shall have the right to control the defense or settlement of any third party Claims as they relate to us, if it so chooses.</p>
+        </section>
+
+        <section>
+          <h2>Governing Law and Jurisdiction</h2>
+          <p>All matters relating to the Product and these Terms and any dispute or claim arising therefrom or related thereto (in each case, including non-contractual disputes or claims), shall be governed by and construed in accordance with the internal laws of Switzerland without giving effect to any choice or conflict of law provision or rule. Furthermore, the United Nations Convention on Contracts for the International Sale of Goods will not apply to these Terms.</p>
+          <p>Any legal suit, action, or proceeding arising out of, or related to, these Terms or the Product shall be instituted exclusively in the courts of Zug, Switzerland although we retain the right to bring any suit, action, or proceeding against you for breach of these Terms in your country of residence or any other relevant country. You waive any and all objections to the exercise of jurisdiction over you by such courts and to venue in such courts.</p>
+        </section>
+
+        <section>
+          <h2>Dispute Resolution</h2>
+          <p><strong>Arbitration.</strong> At Company's sole discretion, it may require You to submit any disputes arising from the use of these Terms or the Products, including disputes arising from or concerning their interpretation, violation, invalidity, non-performance, or termination, to final and binding arbitration under the Swiss Rules of International Arbitration of the Swiss Chambers' Arbitration Institution.</p>
+          <p>You have the right to opt-out and not be bound by this section and waivers set forth in this section by sending written notice of your decision to opt-out to the following email address: <a href="mailto:communications@nyklabs.com">communications@nyklabs.com</a>. The notice must be sent within 30 days of the "Last Updated" date or your first use of the Products, whichever is later, otherwise you shall be bound to arbitrate disputes in accordance with the Terms.</p>
+          <p><strong>Limitations on Filing Claims.</strong> ANY CAUSE OF ACTION OR CLAIM YOU MAY HAVE ARISING OUT OF OR RELATING TO THESE TERMS OR THE PRODUCTS MUST BE COMMENCED WITHIN ONE (1) YEAR AFTER THE CAUSE OF ACTION ACCRUES, OTHERWISE, SUCH CAUSE OF ACTION OR CLAIM IS PERMANENTLY BARRED.</p>
+          <p>YOU AND THE COMPANY HEREBY WAIVE ANY CONSTITUTIONAL AND STATUTORY RIGHTS TO SUE IN COURT AND HAVE A TRIAL IN FRONT OF A JUDGE OR A JURY.</p>
+          <p>You further agree that any claim, dispute, or arbitration proceedings shall be conducted in your individual capacity only and not as a class action or other representative action, and you expressly waive your right to file a class action or seek relief on a class basis. YOU AND AGREE THAT YOU MAY BRING CLAIMS AGAINST THE COMPANY IN YOUR INDIVIDUAL CAPACITY, AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE PROCEEDING. If any court or arbitrator determines that the class action waiver set forth in this paragraph is void or unenforceable for any reason or that an arbitration can proceed on a class basis, then the arbitration provision set forth above shall be deemed null and void in its entirety and the parties shall be deemed to have not agreed to arbitrate disputes.</p>
+        </section>
+
+        <section>
+          <h2>Waiver and Severability</h2>
+          <p>No waiver of by the Company of any term or condition set out in these Terms shall be deemed a further or continuing waiver of such term or condition or a waiver of any other term or condition, and any failure of the Company to assert a right or provision under these Terms shall not constitute a waiver of such right or provision. If any provision of these Terms is held by a court or other tribunal of competent jurisdiction to be invalid, illegal or unenforceable for any reason, such provision shall be eliminated or limited to the minimum extent such that the remaining provisions of the Terms will continue in full force and effect.</p>
+        </section>
+
+        <section>
+          <h2>Entire Agreement</h2>
+          <p>The Terms, Privacy Policy, Cookie Notice, and any other agreements referenced herein constitute the sole and entire agreement between you and Company regarding the Product and supersede all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, regarding the Product.</p>
+        </section>
+
+        <section>
+          <h2>Assignment</h2>
+          <p>You may not assign your rights or obligations under these Terms in whole or in part to any third party. You acknowledge and agree that the Company may assign its rights and obligations under these Terms and, in such context, share or transfer information provided by you while using the Products to a third party.</p>
+        </section>
+
+        <section>
+          <h2>Conflict of Provisions</h2>
+          <p>In the event that there exists a conflict between any term, condition or provision contained within these Terms, and in any term, condition, or provision contained within any other specific part or feature, the term, condition, or provision contained in such specific part or feature will control.</p>
+        </section>
+
+        <section>
+          <h2>Your Comments and Concerns</h2>
+          <p>All comments, requests for technical support, and other communications relating to the Products should be directed to: <a href="mailto:communications@nyklabs.com">communications@nyklabs.com</a>.</p>
+        </section>
+      </div>
+    </main>
+  );
+}
