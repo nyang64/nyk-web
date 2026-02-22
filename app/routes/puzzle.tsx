@@ -1,6 +1,6 @@
 import type { Route } from "./+types/puzzle";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { LEVELS, type LevelId } from "../puzzle-config";
 
 // Calculate day of year (1-365/366) based on user's local timezone
@@ -53,6 +53,7 @@ interface PuzzleData {
 
 export default function Puzzle() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState<LevelId>("level-1");
   const [gameStarted, setGameStarted] = useState(false);
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
@@ -239,6 +240,13 @@ export default function Puzzle() {
       piecesInitializedRef.current = false;
     }
   }, [gameStarted]);
+
+  // Re-initialize puzzle when level changes during active game (for "Next Level" button)
+  useEffect(() => {
+    if (gameStarted && !puzzleData && !completed) {
+      initializePuzzle();
+    }
+  }, [gameStarted, puzzleData, completed, initializePuzzle]);
 
   // Update piece positions when dimensions change (preserving isPlaced state)
   useEffect(() => {
@@ -479,6 +487,26 @@ export default function Puzzle() {
     setWrongCell(null);
   };
 
+  const handleNextLevel = () => {
+    const currentLevelIndex = LEVELS.findIndex((l) => l.id === selectedLevel);
+    if (currentLevelIndex < LEVELS.length - 1) {
+      // Go to next level - reset state and change level
+      // The useEffect watching selectedLevel will re-initialize the puzzle
+      const nextLevel = LEVELS[currentLevelIndex + 1].id;
+      piecesInitializedRef.current = false;
+      setCompleted(false);
+      setPuzzleData(null);
+      setPieces([]);
+      setSelectedPieceId(null);
+      setWrongCell(null);
+      setImageLoaded(false);
+      setSelectedLevel(nextLevel);
+    } else {
+      // At level 5, go to main page
+      navigate("/");
+    }
+  };
+
   if (!gameStarted) {
     return (
       <main>
@@ -583,6 +611,13 @@ export default function Puzzle() {
               <h3>Congratulations!</h3>
               <p>You completed the puzzle!</p>
               <div className="celebration-emoji">🏆⭐🌟</div>
+              <button
+                type="button"
+                onClick={handleNextLevel}
+                className="next-level-btn"
+              >
+                {selectedLevel === "level-5" ? "Back to Home" : "Next Level"}
+              </button>
             </div>
           </div>
         )}
@@ -838,6 +873,29 @@ export default function Puzzle() {
         .celebration-emoji {
           font-size: 2rem;
           animation: bounce 0.5s ease infinite alternate;
+        }
+
+        .next-level-btn {
+          margin-top: 1rem;
+          padding: 0.75rem 2rem;
+          font-size: 1rem;
+          font-weight: 600;
+          color: #0f172a;
+          background: linear-gradient(135deg, #10b981, #34d399);
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .next-level-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .next-level-btn:active {
+          transform: translateY(0);
         }
 
         @keyframes bounce {

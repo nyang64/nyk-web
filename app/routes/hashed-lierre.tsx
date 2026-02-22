@@ -1,5 +1,8 @@
 import type { Route } from "./+types/hashed-lierre";
 
+const HLRR_TOKEN_ADDRESS = import.meta.env.VITE_HLRR_TOKEN_ADDRESS;
+const TREASURY_ADDRESS = import.meta.env.VITE_TREASURY_ADDRESS;
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Hashed Lierre Token (HLRR) - NYK Labs" },
@@ -27,12 +30,12 @@ export default function HashedLierre() {
           <h3>Token Contract Addresses</h3>
           <div className="address-grid">
             <div className="address-card">
-              <span className="address-label">Token Address (BSC Mainnet & BASE Network):</span>
-              <code className="address-value">0x5028410b2a9dDF94b36aF1124a3393f96873e1e4</code>
+              <span className="address-label">Token Address (BASE Network):</span>
+              <code className="address-value">{HLRR_TOKEN_ADDRESS}</code>
             </div>
             <div className="address-card">
               <span className="address-label">Treasury Address:</span>
-              <code className="address-value">0x50FC657BFa68764C66ad56969A8D6797fCd580B6</code>
+              <code className="address-value">{TREASURY_ADDRESS}</code>
             </div>
           </div>
         </div>
@@ -81,7 +84,7 @@ export default function HashedLierre() {
             <div className="token-stat">
               <span className="stat-label">Initial Mint</span>
               <span className="stat-value">80,000,000 HLRR</span>
-              <span className="stat-note">40M on BSC + 40M on BASE (66.7% of maximum supply)</span>
+              <span className="stat-note">Circulating supply on BASE (66.7% of maximum supply)</span>
             </div>
           </div>
 
@@ -131,12 +134,12 @@ export default function HashedLierre() {
           <div className="dist-item airdrop">
             <div className="dist-header">
               <span className="dist-icon">🎁</span>
-              <span className="dist-title">Airdrop</span>
+              <span className="dist-title">Airdrop & Presale</span>
             </div>
             <div className="dist-amount">10,000,000 HLRR</div>
             <div className="dist-percent">8.3% of max supply</div>
             <div className="dist-description">
-              Community rewards for early adopters and supporters
+              Combined allocation for community airdrop and presale. Early presale at discounted price of $0.075/HLRR; price may increase over time, targeting $1M+ USDC raise.
             </div>
           </div>
 
@@ -193,7 +196,7 @@ export default function HashedLierre() {
           <h3>Distribution Summary</h3>
           <div className="summary-stats">
             <div className="summary-row">
-              <span>Initial Mint (80M total: 40M BSC + 40M BASE)</span>
+              <span>Initial Mint (Circulating on BASE)</span>
               <span className="summary-value">80,000,000 HLRR (66.7%)</span>
             </div>
             <div className="summary-row">
@@ -206,7 +209,7 @@ export default function HashedLierre() {
             </div>
           </div>
           <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(34, 211, 238, 0.05)', borderRadius: '6px', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            <strong style={{ color: 'var(--accent)' }}>Note:</strong> The 80M initial mint is distributed as: Airdrop (10M), Developers (20M), Investors (20M), and Treasury (30M).
+            <strong style={{ color: 'var(--accent)' }}>Note:</strong> The 80M initial mint is distributed as: Airdrop & Presale (10M combined), Developers (20M), Investors (20M), and Treasury (30M).
           </div>
         </div>
 

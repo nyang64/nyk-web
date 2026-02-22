@@ -4,7 +4,11 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
+    "build:testnet": "react-router build --mode testnet",
+    "build:mainnet": "react-router build --mode mainnet",
     "dev": "react-router dev",
+    "dev:testnet": "react-router dev --mode testnet",
+    "dev:mainnet": "react-router dev --mode mainnet",
     "preview": "node serve-local.js",
     "typecheck": "react-router typegen && tsc"
   },

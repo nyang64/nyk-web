@@ -67,6 +67,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li>
                     <NavLink to="/registration">Registration for Airdrop</NavLink>
                   </li>
+                  <li>
+                    <NavLink to="/presale">Hashed Lierre Presale</NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/purchase-crypto">Purchase Crypto</NavLink>
+                  </li>
                 </ul>
               )}
             </li>
