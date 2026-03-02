@@ -14,15 +14,14 @@ import "./app.css";
 
 function VisitorCounter() {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-      Visitors:{" "}
-      <a href="https://www.freevisitorcounters.com/en/home/stats/id/1509917" target="_blank" rel="noopener noreferrer">
-        <img
-          src="https://www.freevisitorcounters.com/en/counter/render/1509917/t/3"
-          alt="Visitor Counter"
-          style={{ border: "none", verticalAlign: "middle" }}
-        />
-      </a>
+    <span style={{ display: "inline-flex", alignItems: "flex-end" }}>
+      Visitors:&nbsp;
+      <iframe
+        src="/visitor-counter.html"
+        style={{ border: "none", width: "200px", height: "40px" }}
+        scrolling="no"
+        title="Visitor Counter"
+      />
     </span>
   );
 }
