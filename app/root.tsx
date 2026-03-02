@@ -12,6 +12,21 @@ import { useState } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
 
+function VisitorCounter() {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+      Visitors:{" "}
+      <a href="https://www.freevisitorcounters.com/en/home/stats/id/1509917" target="_blank" rel="noopener noreferrer">
+        <img
+          src="https://www.freevisitorcounters.com/en/counter/render/1509917/t/3"
+          alt="Visitor Counter"
+          style={{ border: "none", verticalAlign: "middle" }}
+        />
+      </a>
+    </span>
+  );
+}
+
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -92,6 +107,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <NavLink to="/privacy">Privacy Policy</NavLink>
             &nbsp;|&nbsp;
             <NavLink to="/terms">Terms & Conditions</NavLink>
+            &nbsp;|&nbsp;
+            <VisitorCounter />
           </p>
         </footer>
         <style>{`
