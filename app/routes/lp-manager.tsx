@@ -242,6 +242,7 @@ export default function LpManager() {
     getEthereum,
     connectWithProvider: walletConnectWithProvider,
     connectWallet: walletConnect,
+    disconnectWallet: walletDisconnect,
   } = useWallet();
 
   // Protocol / form state
@@ -927,7 +928,7 @@ export default function LpManager() {
               <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>No wallet connected</span>
             )}
           </div>
-          {!connectedAddress && (
+          {!connectedAddress ? (
             <button
               onClick={connectWallet}
               disabled={isSubmitting}
@@ -935,6 +936,23 @@ export default function LpManager() {
             >
               Connect Wallet
             </button>
+          ) : (
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={connectWallet}
+                disabled={isSubmitting}
+                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.4)" }}
+              >
+                Switch Account
+              </button>
+              <button
+                onClick={() => { walletDisconnect(); setBalances({}); }}
+                disabled={isSubmitting}
+                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)" }}
+              >
+                Disconnect
+              </button>
+            </div>
           )}
         </div>
 
