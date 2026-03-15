@@ -134,6 +134,7 @@ const LP_VAULT_ABI = [
 // Known vault deployments (LPVault contract)
 const VAULT_ADDRESSES: Partial<Record<number, string>> = {
   [84532]: "0x35b27228E96159E6c0A7921faC733C6aE06b86d1", // Base Sepolia (LPVault.sol)
+  [8453]:  "0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805", // Base Mainnet (LPVault.sol)
 };
 
 interface LockInfo {
