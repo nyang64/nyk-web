@@ -506,8 +506,8 @@ export default function LpManager() {
       const erc0 = new ethers.Contract(sorted0.address, ERC20_ABI, signer);
       const allowance0: bigint = await erc0.allowance(connectedAddress, nfpmAddress);
       if (allowance0 < amt0Raw) {
-        const tx = await erc0.approve(nfpmAddress, amt0Raw);
-        await tx.wait();
+        const tx = await erc0.approve(nfpmAddress, ethers.MaxUint256);
+        await tx.wait(2);
       }
 
       // Step 2: Approve token1
@@ -515,8 +515,8 @@ export default function LpManager() {
       const erc1 = new ethers.Contract(sorted1.address, ERC20_ABI, signer);
       const allowance1: bigint = await erc1.allowance(connectedAddress, nfpmAddress);
       if (allowance1 < amt1Raw) {
-        const tx = await erc1.approve(nfpmAddress, amt1Raw);
-        await tx.wait();
+        const tx = await erc1.approve(nfpmAddress, ethers.MaxUint256);
+        await tx.wait(2);
       }
 
       const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 min
@@ -594,8 +594,6 @@ export default function LpManager() {
 
       setTxStatus({ type: "success", txHash: receipt.hash, tokenId });
       if (tokenId !== "unknown") setLockTokenId(tokenId);
-      setAmount0("");
-      setAmount1("");
       fetchBalances();
     } catch (err: unknown) {
       const e = err as { code?: number | string; reason?: string; message?: string };
