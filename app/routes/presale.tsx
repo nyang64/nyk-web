@@ -348,13 +348,15 @@ export default function Presale() {
       const hlrrReceived = (parseFloat(contributionAmount) / HLRR_PRICE_USD).toFixed(2);
 
       setTxStatus({ type: 'success', hash: buyTx.hash, hlrrAmount: hlrrReceived });
-
-      // Refresh balances
-      fetchUsdcBalance();
-      fetchUsdcAllowance();
-      fetchPresaleStats();
-      fetchUserContribution();
       setContributionAmount('');
+
+      // Delay refresh so RPC nodes have time to reflect the confirmed tx
+      setTimeout(() => {
+        fetchUsdcBalance();
+        fetchUsdcAllowance();
+        fetchPresaleStats();
+        fetchUserContribution();
+      }, 3000);
 
     } catch (err: unknown) {
       handleTransactionError(err);
@@ -402,12 +404,13 @@ export default function Presale() {
       const hlrrReceived = (usdValue / HLRR_PRICE_USD).toFixed(2);
 
       setTxStatus({ type: 'success', hash: buyTx.hash, hlrrAmount: hlrrReceived });
-
-      // Refresh balances
-      fetchEthBalance();
-      fetchPresaleStats();
-      fetchUserContribution();
       setContributionAmount('');
+
+      setTimeout(() => {
+        fetchEthBalance();
+        fetchPresaleStats();
+        fetchUserContribution();
+      }, 3000);
 
     } catch (err: unknown) {
       handleTransactionError(err);
