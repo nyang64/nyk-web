@@ -377,18 +377,9 @@ export default function LpManager() {
     }
   };
 
-  const switchAccount = async () => {
-    setTxStatus({ type: "connecting" });
-    try {
-      await walletSwitchAccount();
-      setTxStatus({ type: "idle" });
-    } catch (err: unknown) {
-      const e = err as { code?: number; message?: string };
-      setTxStatus({
-        type: "error",
-        message: e.code === 4001 ? "Cancelled." : (e.message || "Failed to switch account."),
-      });
-    }
+  const switchAccount = () => {
+    setBalances({});
+    walletSwitchAccount();
   };
 
   // ─── Balance fetching ────────────────────────────────────────────────────────
@@ -952,22 +943,13 @@ export default function LpManager() {
               Connect Wallet
             </button>
           ) : (
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                onClick={switchAccount}
-                disabled={isSubmitting}
-                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.5)", color: "#22d3ee" }}
-              >
-                Switch Account
-              </button>
-              <button
-                onClick={() => { walletDisconnect(); setBalances({}); }}
-                disabled={isSubmitting}
-                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.5)", color: "#f87171" }}
-              >
-                Disconnect
-              </button>
-            </div>
+            <button
+              onClick={switchAccount}
+              disabled={isSubmitting}
+              style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.5)", color: "#22d3ee" }}
+            >
+              Switch Account
+            </button>
           )}
         </div>
 

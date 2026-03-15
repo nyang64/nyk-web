@@ -114,18 +114,28 @@ export function useWallet() {
    * Connect using a specific EIP-6963 provider.
    * Throws on rejection so callers can handle txStatus.
    */
+  /**
+   * Connect using a specific EIP-6963 provider.
+   * Always revokes existing permission first so the wallet shows the full
+   * account picker — this is the correct behaviour for both first-connect
+   * and switch-account flows.
+   * Throws on rejection so callers can handle txStatus.
+   */
   const connectWithProvider = useCallback(
-    async (detail: EIP6963ProviderDetail, forceAccountPicker = false): Promise<string> => {
+    async (detail: EIP6963ProviderDetail): Promise<string> => {
       setShowWalletPicker(false);
-      if (forceAccountPicker) {
-        // wallet_requestPermissions opens the account selection UI in the wallet.
+      // Revoke so wallet cannot silently reuse a previously selected account.
+      try {
         await detail.provider.request({
-          method: "wallet_requestPermissions",
+          method: "wallet_revokePermissions",
           params: [{ eth_accounts: {} }],
         });
+      } catch {
+        // Not all wallets support wallet_revokePermissions — continue.
       }
+      // With permission cleared, eth_requestAccounts forces the account picker UI.
       const accounts = (await detail.provider.request({
-        method: "eth_accounts",
+        method: "eth_requestAccounts",
       })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");
       activeProviderRef.current = detail.provider;
@@ -138,21 +148,14 @@ export function useWallet() {
   );
 
   /**
-   * Force the wallet to show the account picker so the user can switch accounts.
-   * Works with the currently active provider (or falls back to window.ethereum).
+   * Clear current connection and open the wallet picker so the user can
+   * select a wallet extension and account from scratch.
    */
-  const switchAccount = useCallback(async (): Promise<string | null> => {
-    const provider = activeProviderRef.current ?? window.ethereum ?? null;
-    if (!provider) throw new Error("No wallet connected");
-    // wallet_requestPermissions forces the wallet UI to show the account picker.
-    await provider.request({
-      method: "wallet_requestPermissions",
-      params: [{ eth_accounts: {} }],
-    });
-    const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
-    if (!accounts.length) return null;
-    setConnectedAddress(accounts[0]);
-    return accounts[0];
+  const switchAccount = useCallback(() => {
+    setConnectedAddress(null);
+    setChainId(null);
+    activeProviderRef.current = null;
+    setShowWalletPicker(true);
   }, []);
 
   /**
@@ -170,9 +173,15 @@ export function useWallet() {
       return null;
     }
     const single = discoveredWallets[0];
-    if (single) return connectWithProvider(single, true);
+    if (single) return connectWithProvider(single);
 
     // Fallback for non-EIP-6963 wallets
+    try {
+      await window.ethereum!.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    } catch { /* not supported */ }
     const accounts = (await window.ethereum!.request({
       method: "eth_requestAccounts",
     })) as string[];

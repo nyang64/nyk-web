@@ -447,18 +447,8 @@ export default function Presale() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const switchAccount = async () => {
-    setTxStatus({ type: 'connecting' });
-    try {
-      await walletSwitchAccount();
-      setTxStatus({ type: 'idle' });
-    } catch (err: unknown) {
-      const e = err as { code?: number; message?: string };
-      setTxStatus({
-        type: 'error',
-        message: e.code === 4001 ? 'Cancelled.' : (e.message || 'Failed to switch account.'),
-      });
-    }
+  const switchAccount = () => {
+    walletSwitchAccount();
   };
 
   const disconnectWallet = () => {
@@ -641,41 +631,22 @@ export default function Presale() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={switchAccount}
-                  disabled={txStatus.type === 'connecting'}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem 1rem',
-                    background: 'rgba(34,211,238,0.1)',
-                    color: '#22d3ee',
-                    border: '1px solid rgba(34,211,238,0.4)',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Switch Account
-                </button>
-                <button
-                  type="button"
-                  onClick={disconnectWallet}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem 1rem',
-                    background: 'rgba(239,68,68,0.1)',
-                    color: '#f87171',
-                    border: '1px solid rgba(239,68,68,0.4)',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Disconnect
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={switchAccount}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(34,211,238,0.1)',
+                  color: '#22d3ee',
+                  border: '1px solid rgba(34,211,238,0.4)',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Switch Account
+              </button>
             </div>
           ) : (
             <button
