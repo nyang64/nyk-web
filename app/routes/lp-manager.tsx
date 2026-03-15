@@ -117,6 +117,42 @@ const NFPM_AERODROME_ABI = [
   "function mint((address token0, address token1, int24 tickSpacing, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline, uint160 sqrtPriceX96)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)",
 ];
 
+const NFPM_APPROVE_ABI = [
+  "function approve(address to, uint256 tokenId) external",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
+];
+
+const LP_VAULT_ABI = [
+  "function createLock(address manager, uint256 tokenId, uint256 unlockTime) external returns (uint256 lockIndex)",
+  "function collectFees(address manager, uint256 lockIndex, address recipient) external",
+  "function withdrawNFT(address manager, uint256 lockIndex) external",
+  "function getLockRefsByOwner(address owner) external view returns (tuple(address manager, uint256 index)[] memory)",
+  "function getLocksByOwner(address owner) external view returns (tuple(uint256 tokenId, uint256 unlockTime, address owner, bool active)[] memory)",
+  "function timeUntilUnlock(address manager, uint256 lockIndex) external view returns (uint256)",
+];
+
+// Known vault deployments (LPVault contract)
+const VAULT_ADDRESSES: Partial<Record<number, string>> = {
+  [84532]: "0x5607746F564BF011bE31882079512b0e68FE1dF0", // Base Sepolia
+};
+
+interface LockInfo {
+  manager: string;
+  lockIndex: number;
+  tokenId: string;
+  unlockTime: number; // unix seconds
+  active: boolean;
+}
+
+type LockTxStatus =
+  | { type: "idle" }
+  | { type: "approving" }
+  | { type: "locking" }
+  | { type: "collecting"; lockIndex: number }
+  | { type: "withdrawing"; lockIndex: number }
+  | { type: "success"; message: string }
+  | { type: "error"; message: string };
+
 // ─── Math helpers ─────────────────────────────────────────────────────────────
 
 function sqrtBigInt(n: bigint): bigint {
@@ -225,6 +261,14 @@ export default function LpManager() {
   // Status
   const [txStatus, setTxStatus] = useState<TxStatus>({ type: "idle" });
 
+  // Vault / lock state
+  const [vaultAddress, setVaultAddress] = useState<string>("");
+  const [lockNfpm, setLockNfpm] = useState<string>("");
+  const [lockTokenId, setLockTokenId] = useState<string>("");
+  const [lockUnlockDate, setLockUnlockDate] = useState<string>("");
+  const [myLocks, setMyLocks] = useState<LockInfo[]>([]);
+  const [lockTxStatus, setLockTxStatus] = useState<LockTxStatus>({ type: "idle" });
+
   // ─── Derived values ──────────────────────────────────────────────────────────
 
   const networkName =
@@ -287,6 +331,20 @@ export default function LpManager() {
   useEffect(() => {
     if (!connectedAddress) setBalances({});
   }, [connectedAddress]);
+
+  // Auto-populate vault address and lock NFPM when chain / protocol changes
+  useEffect(() => {
+    if (chainId) {
+      setVaultAddress(VAULT_ADDRESSES[chainId] ?? "");
+    }
+    if (chainId && protocol) {
+      const nfpmAddr =
+        protocol === "uniswap"
+          ? UNISWAP_ADDRESSES[chainId]?.nfpm ?? ""
+          : AERODROME_ADDRESSES.nfpm;
+      setLockNfpm(nfpmAddr);
+    }
+  }, [chainId, protocol]);
 
   const connectWithProvider = async (detail: EIP6963ProviderDetail) => {
     setTxStatus({ type: "connecting" });
@@ -533,6 +591,127 @@ export default function LpManager() {
           type: "error",
           message: e.reason ?? e.message ?? "Transaction failed.",
         });
+      }
+    }
+  };
+
+  // ─── Vault handlers ──────────────────────────────────────────────────────────
+
+  const fetchMyLocks = useCallback(async () => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !vaultAddress) return;
+    try {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const vault = new ethers.Contract(vaultAddress, LP_VAULT_ABI, provider);
+      const [refs, locks]: [
+        { manager: string; index: bigint }[],
+        { tokenId: bigint; unlockTime: bigint; owner: string; active: boolean }[]
+      ] = await Promise.all([
+        vault.getLockRefsByOwner(connectedAddress),
+        vault.getLocksByOwner(connectedAddress),
+      ]);
+      setMyLocks(
+        refs.map((ref, i) => ({
+          manager: ref.manager,
+          lockIndex: Number(ref.index),
+          tokenId: locks[i].tokenId.toString(),
+          unlockTime: Number(locks[i].unlockTime),
+          active: locks[i].active,
+        }))
+      );
+    } catch (err) {
+      console.error("fetchMyLocks error:", err);
+    }
+  }, [connectedAddress, vaultAddress, getEthereum]);
+
+  useEffect(() => {
+    fetchMyLocks();
+  }, [fetchMyLocks]);
+
+  const handleLockNFT = async () => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
+    if (!lockNfpm) { setLockTxStatus({ type: "error", message: "NFPM address required." }); return; }
+    if (!lockTokenId) { setLockTxStatus({ type: "error", message: "Token ID required." }); return; }
+    if (!lockUnlockDate) { setLockTxStatus({ type: "error", message: "Unlock date required." }); return; }
+    if (!vaultAddress) { setLockTxStatus({ type: "error", message: "Vault address required." }); return; }
+
+    const unlockTimestamp = Math.floor(new Date(lockUnlockDate).getTime() / 1000);
+    if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
+      setLockTxStatus({ type: "error", message: "Unlock date must be in the future." });
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+
+      // Step 1: approve NFPM to let vault pull the NFT
+      setLockTxStatus({ type: "approving" });
+      const nfpm = new ethers.Contract(lockNfpm, NFPM_APPROVE_ABI, signer);
+      const approveTx = await nfpm.approve(vaultAddress, BigInt(lockTokenId));
+      await approveTx.wait(2);
+
+      // Step 2: createLock
+      setLockTxStatus({ type: "locking" });
+      const vault = new ethers.Contract(vaultAddress, LP_VAULT_ABI, signer);
+      const lockTx = await vault.createLock(lockNfpm, BigInt(lockTokenId), BigInt(unlockTimestamp));
+      const receipt = await lockTx.wait();
+      if (!receipt || receipt.status === 0) throw new Error("Lock transaction reverted");
+
+      setLockTxStatus({ type: "success", message: `NFT #${lockTokenId} locked until ${new Date(lockUnlockDate).toLocaleString()}.` });
+      setLockTokenId("");
+      await fetchMyLocks();
+    } catch (err: unknown) {
+      const e = err as { code?: number | string; reason?: string; message?: string };
+      if (e.code === 4001 || e.code === "ACTION_REJECTED") {
+        setLockTxStatus({ type: "error", message: "Rejected by user." });
+      } else {
+        setLockTxStatus({ type: "error", message: e.reason ?? e.message ?? "Lock failed." });
+      }
+    }
+  };
+
+  const handleCollectFees = async (manager: string, lockIndex: number) => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !vaultAddress) return;
+    try {
+      setLockTxStatus({ type: "collecting", lockIndex });
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      const vault = new ethers.Contract(vaultAddress, LP_VAULT_ABI, signer);
+      const tx = await vault.collectFees(manager, lockIndex, connectedAddress);
+      await tx.wait();
+      setLockTxStatus({ type: "success", message: "Fees collected to your wallet." });
+      await fetchMyLocks();
+    } catch (err: unknown) {
+      const e = err as { code?: number | string; reason?: string; message?: string };
+      if (e.code === 4001 || e.code === "ACTION_REJECTED") {
+        setLockTxStatus({ type: "error", message: "Rejected by user." });
+      } else {
+        setLockTxStatus({ type: "error", message: e.reason ?? e.message ?? "Collect fees failed." });
+      }
+    }
+  };
+
+  const handleWithdrawNFT = async (manager: string, lockIndex: number) => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !vaultAddress) return;
+    try {
+      setLockTxStatus({ type: "withdrawing", lockIndex });
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      const vault = new ethers.Contract(vaultAddress, LP_VAULT_ABI, signer);
+      const tx = await vault.withdrawNFT(manager, lockIndex);
+      await tx.wait();
+      setLockTxStatus({ type: "success", message: `NFT withdrawn back to your wallet.` });
+      await fetchMyLocks();
+    } catch (err: unknown) {
+      const e = err as { code?: number | string; reason?: string; message?: string };
+      if (e.code === 4001 || e.code === "ACTION_REJECTED") {
+        setLockTxStatus({ type: "error", message: "Rejected by user." });
+      } else {
+        setLockTxStatus({ type: "error", message: e.reason ?? e.message ?? "Withdraw failed." });
       }
     }
   };
@@ -1038,6 +1217,236 @@ export default function LpManager() {
             {txStatus.message}
           </div>
         )}
+
+        {/* ── Divider ── */}
+        <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "1.5rem 0" }} />
+
+        {/* ── Lock LP Position ── */}
+        <div style={S.card}>
+          <p style={{ ...S.sectionTitle, fontSize: "1.1rem", marginBottom: "1.25rem" }}>
+            Lock LP Position
+          </p>
+          <p style={{ fontSize: "0.85rem", color: "#9ca3af", marginBottom: "1.25rem" }}>
+            Lock your LP NFT into the vault to prevent it from being flagged as unlocked liquidity. You can still collect trading fees while it is locked.
+          </p>
+
+          {/* NFPM */}
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={S.label}>NFPM Address <span style={{ color: "#6b7280" }}>(auto-filled from protocol)</span></label>
+            <input
+              style={S.input}
+              value={lockNfpm}
+              onChange={(e) => setLockNfpm(e.target.value)}
+              placeholder="0x..."
+            />
+          </div>
+
+          {/* Token ID */}
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={S.label}>LP NFT Token ID</label>
+            <input
+              style={S.input}
+              type="number"
+              value={lockTokenId}
+              onChange={(e) => setLockTokenId(e.target.value)}
+              placeholder="e.g. 12345  (shown in success message after creating above)"
+            />
+          </div>
+
+          {/* Unlock date */}
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={S.label}>Unlock Date &amp; Time</label>
+            <input
+              style={S.input}
+              type="datetime-local"
+              value={lockUnlockDate}
+              onChange={(e) => setLockUnlockDate(e.target.value)}
+            />
+            {lockUnlockDate && (
+              <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.3rem" }}>
+                Locks until: {new Date(lockUnlockDate).toLocaleString()}
+              </div>
+            )}
+          </div>
+
+          {/* Vault address */}
+          <div style={{ marginBottom: "1.25rem" }}>
+            <label style={S.label}>Vault Contract Address</label>
+            <input
+              style={S.input}
+              value={vaultAddress}
+              onChange={(e) => setVaultAddress(e.target.value)}
+              placeholder="0x...  (deploy LPVault.sol and paste address)"
+            />
+            {!vaultAddress && (
+              <div style={{ fontSize: "0.78rem", color: "#f59e0b", marginTop: "0.3rem" }}>
+                LPVault not deployed on this network yet — deploy contracts/LPTimeLock.sol first.
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLockNFT}
+            disabled={
+              !connectedAddress || !lockNfpm || !lockTokenId || !lockUnlockDate || !vaultAddress ||
+              lockTxStatus.type === "approving" || lockTxStatus.type === "locking"
+            }
+            style={{
+              width: "100%",
+              padding: "0.875rem",
+              background: (!connectedAddress || !lockNfpm || !lockTokenId || !lockUnlockDate || !vaultAddress)
+                ? "#374151" : "#7c3aed",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              fontSize: "1rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {lockTxStatus.type === "approving"
+              ? "Approving NFT transfer..."
+              : lockTxStatus.type === "locking"
+              ? "Locking in vault..."
+              : "Approve & Lock"}
+          </button>
+
+          {lockTxStatus.type === "success" && (
+            <div style={{ marginTop: "1rem", padding: "0.85rem 1rem", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.4)", borderRadius: 8, color: "#6ee7b7", fontSize: "0.9rem" }}>
+              {lockTxStatus.message}
+            </div>
+          )}
+          {lockTxStatus.type === "error" && (
+            <div className="error-message" style={{ marginTop: "1rem" }}>
+              {lockTxStatus.message}
+            </div>
+          )}
+        </div>
+
+        {/* ── My Locked Positions ── */}
+        <div style={S.card}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+            <p style={{ ...S.sectionTitle, fontSize: "1.1rem", margin: 0 }}>My Locked Positions</p>
+            <button
+              onClick={fetchMyLocks}
+              disabled={!connectedAddress || !vaultAddress}
+              style={{
+                padding: "0.35rem 0.85rem",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 6,
+                color: "#9ca3af",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+              }}
+            >
+              Refresh
+            </button>
+          </div>
+
+          {!vaultAddress && (
+            <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Enter a vault address above to view locks.</div>
+          )}
+
+          {vaultAddress && !connectedAddress && (
+            <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Connect wallet to view your locks.</div>
+          )}
+
+          {vaultAddress && connectedAddress && myLocks.length === 0 && (
+            <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>No locked positions found.</div>
+          )}
+
+          {myLocks.map((lock, i) => {
+            const now = Math.floor(Date.now() / 1000);
+            const isUnlocked = lock.unlockTime <= now;
+            const secondsLeft = lock.unlockTime - now;
+            const daysLeft = Math.floor(secondsLeft / 86400);
+            const hoursLeft = Math.floor((secondsLeft % 86400) / 3600);
+            const isCollecting = lockTxStatus.type === "collecting" && lockTxStatus.lockIndex === lock.lockIndex;
+            const isWithdrawing = lockTxStatus.type === "withdrawing" && lockTxStatus.lockIndex === lock.lockIndex;
+
+            return (
+              <div
+                key={`${lock.manager}-${lock.lockIndex}`}
+                style={{
+                  padding: "1rem",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 8,
+                  marginBottom: "0.75rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "var(--text)" }}>NFT #{lock.tokenId}</div>
+                    <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.2rem" }}>
+                      NFPM: {lock.manager.slice(0, 8)}…{lock.manager.slice(-6)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "0.85rem", color: isUnlocked ? "#6ee7b7" : "#fbbf24" }}>
+                      {isUnlocked ? "🔓 Unlocked" : `🔒 ${daysLeft}d ${hoursLeft}h remaining`}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.2rem" }}>
+                      {new Date(lock.unlockTime * 1000).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+
+                {lock.active && (
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => handleCollectFees(lock.manager, lock.lockIndex)}
+                      disabled={isCollecting || isWithdrawing}
+                      style={{
+                        flex: 1,
+                        padding: "0.5rem 0.75rem",
+                        background: "rgba(34,211,238,0.08)",
+                        border: "1px solid rgba(34,211,238,0.3)",
+                        borderRadius: 6,
+                        color: "#67e8f9",
+                        fontSize: "0.85rem",
+                        cursor: "pointer",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {isCollecting ? "Collecting…" : "Collect Fees"}
+                    </button>
+                    <button
+                      onClick={() => handleWithdrawNFT(lock.manager, lock.lockIndex)}
+                      disabled={!isUnlocked || isCollecting || isWithdrawing}
+                      title={!isUnlocked ? "Still locked" : "Withdraw NFT to your wallet"}
+                      style={{
+                        flex: 1,
+                        padding: "0.5rem 0.75rem",
+                        background: isUnlocked ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
+                        border: `1px solid ${isUnlocked ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.08)"}`,
+                        borderRadius: 6,
+                        color: isUnlocked ? "#c4b5fd" : "#4b5563",
+                        fontSize: "0.85rem",
+                        cursor: isUnlocked ? "pointer" : "not-allowed",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {isWithdrawing ? "Withdrawing…" : "Withdraw NFT"}
+                    </button>
+                  </div>
+                )}
+
+                {!lock.active && (
+                  <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>Withdrawn</div>
+                )}
+              </div>
+            );
+          })}
+
+          {(lockTxStatus.type === "collecting" || lockTxStatus.type === "withdrawing") && (
+            <div style={{ color: "#67e8f9", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+              {lockTxStatus.type === "collecting" ? "Collecting fees…" : "Withdrawing NFT…"}
+            </div>
+          )}
+        </div>
+
       </div>
     </main>
   );
