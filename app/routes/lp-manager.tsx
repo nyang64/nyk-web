@@ -941,14 +941,14 @@ export default function LpManager() {
               <button
                 onClick={connectWallet}
                 disabled={isSubmitting}
-                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.4)" }}
+                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.5)", color: "#22d3ee" }}
               >
                 Switch Account
               </button>
               <button
                 onClick={() => { walletDisconnect(); setBalances({}); }}
                 disabled={isSubmitting}
-                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)" }}
+                style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.5)", color: "#f87171" }}
               >
                 Disconnect
               </button>
