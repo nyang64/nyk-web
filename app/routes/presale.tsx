@@ -324,7 +324,13 @@ export default function Presale() {
         setTxStatus({ type: 'approving' });
         const approveTx = await usdcContract.approve(CONTRACTS.HLRR, usdcAmount);
         setTxStatus({ type: 'approving', hash: approveTx.hash });
-        await approveTx.wait();
+        // Wait for 2 confirmations so load-balanced RPC nodes are consistent
+        await approveTx.wait(2);
+        // Re-read allowance to confirm state is propagated before buying
+        const confirmedAllowance = await usdcContract.allowance(connectedAddress, CONTRACTS.HLRR);
+        if (confirmedAllowance < usdcAmount) {
+          throw new Error('Approval is still propagating. Please try again in a moment.');
+        }
       }
 
       // Buy presale tokens
