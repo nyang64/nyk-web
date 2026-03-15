@@ -269,6 +269,7 @@ export default function LpManager() {
   const [lockNfpm, setLockNfpm] = useState<string>("");
   const [lockTokenId, setLockTokenId] = useState<string>("");
   const [lockUnlockDate, setLockUnlockDate] = useState<string>("");
+  const [lockUnlockTime, setLockUnlockTime] = useState<string>("00:00");
   const [myLocks, setMyLocks] = useState<LockInfo[]>([]);
   const [lockTxStatus, setLockTxStatus] = useState<LockTxStatus>({ type: "idle" });
 
@@ -587,6 +588,7 @@ export default function LpManager() {
       }
 
       setTxStatus({ type: "success", txHash: receipt.hash, tokenId });
+      if (tokenId !== "unknown") setLockTokenId(tokenId);
       setAmount0("");
       setAmount1("");
       fetchBalances();
@@ -644,7 +646,7 @@ export default function LpManager() {
     if (!lockUnlockDate) { setLockTxStatus({ type: "error", message: "Unlock date required." }); return; }
     if (!vaultAddress) { setLockTxStatus({ type: "error", message: "Vault address required." }); return; }
 
-    const unlockTimestamp = Math.floor(new Date(lockUnlockDate).getTime() / 1000);
+    const unlockTimestamp = Math.floor(new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).getTime() / 1000);
     if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
       setLockTxStatus({ type: "error", message: "Unlock date must be in the future." });
       return;
@@ -667,7 +669,7 @@ export default function LpManager() {
       const receipt = await lockTx.wait();
       if (!receipt || receipt.status === 0) throw new Error("Lock transaction reverted");
 
-      setLockTxStatus({ type: "success", message: `NFT #${lockTokenId} locked until ${new Date(lockUnlockDate).toLocaleString()}.` });
+      setLockTxStatus({ type: "success", message: `NFT #${lockTokenId} locked until ${new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).toLocaleString()}.` });
       setLockTokenId("");
       await fetchMyLocks();
     } catch (err: unknown) {
@@ -1271,16 +1273,25 @@ export default function LpManager() {
 
           {/* Unlock date */}
           <div style={{ marginBottom: "1rem" }}>
-            <label style={S.label}>Unlock Date &amp; Time</label>
-            <input
-              style={S.input}
-              type="datetime-local"
-              value={lockUnlockDate}
-              onChange={(e) => setLockUnlockDate(e.target.value)}
-            />
+            <label style={S.label}>Unlock Date &amp; Time (24h)</label>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <input
+                style={{ ...S.input, flex: 2 }}
+                type="date"
+                value={lockUnlockDate}
+                onChange={(e) => setLockUnlockDate(e.target.value)}
+              />
+              <input
+                style={{ ...S.input, flex: 1 }}
+                type="time"
+                step="60"
+                value={lockUnlockTime}
+                onChange={(e) => setLockUnlockTime(e.target.value)}
+              />
+            </div>
             {lockUnlockDate && (
               <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.3rem" }}>
-                Locks until: {new Date(lockUnlockDate).toLocaleString()}
+                Locks until: {new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).toLocaleString()}
               </div>
             )}
           </div>
