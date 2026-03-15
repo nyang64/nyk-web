@@ -14,10 +14,7 @@ declare global {
       reset: (widgetId: string) => void;
       remove: (widgetId: string) => void;
     };
-    ethereum?: {
-      request: (args: { method: string; params?: any[] }) => Promise<any>;
-      isMetaMask?: boolean;
-    };
+    // ethereum is declared in app/hooks/useWallet.ts
   }
 }
 
@@ -114,9 +111,9 @@ export default function Registration() {
       // Step 1: Request account access (connect wallet)
       let accounts;
       try {
-        accounts = await window.ethereum.request({ 
-          method: 'eth_requestAccounts' 
-        });
+        accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        }) as string[];
       } catch (err: any) {
         if (err.code === 4001) {
           setError('Wallet connection rejected. Please connect your wallet to continue.');
@@ -151,7 +148,7 @@ export default function Registration() {
       const signature = await window.ethereum.request({
         method: 'personal_sign',
         params: [message, formData.wallet],
-      });
+      }) as string;
 
       setWalletSignature(signature);
       setWalletVerified(true);

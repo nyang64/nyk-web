@@ -13,4 +13,5 @@ export default [
   route("privacy", "routes/privacy.tsx"),
   route("terms", "routes/terms.tsx"),
   route("puzzle", "routes/puzzle.tsx"),
+  route("lp-manager", "routes/lp-manager.tsx"),
 ] satisfies RouteConfig;
