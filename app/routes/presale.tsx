@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
 import type { Route } from "./+types/presale";
 
@@ -9,15 +9,34 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// Declare ethereum provider type
+// Ethereum provider type
+type EthereumProvider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, callback: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
+  isMetaMask?: boolean;
+  isTrust?: boolean;
+  isCoinbaseWallet?: boolean;
+};
+
+// EIP-6963 types for multi-wallet discovery
+interface EIP6963ProviderInfo {
+  uuid: string;
+  name: string;
+  icon: string;
+  rdns: string;
+}
+interface EIP6963ProviderDetail {
+  info: EIP6963ProviderInfo;
+  provider: EthereumProvider;
+}
+
 declare global {
   interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
-      isMetaMask?: boolean;
-    };
+    ethereum?: EthereumProvider;
+  }
+  interface WindowEventMap {
+    'eip6963:announceProvider': CustomEvent<EIP6963ProviderDetail>;
   }
 }
 
@@ -79,10 +98,19 @@ export default function Presale() {
   const [paymentCurrency, setPaymentCurrency] = useState<PaymentCurrency>('USDC');
   const [contributionAmount, setContributionAmount] = useState('');
 
+  // Multi-wallet support (EIP-6963)
+  const [discoveredWallets, setDiscoveredWallets] = useState<EIP6963ProviderDetail[]>([]);
+  const [showWalletPicker, setShowWalletPicker] = useState(false);
+  const activeProviderRef = useRef<EthereumProvider | null>(null);
+  const getEthereum = useCallback((): EthereumProvider | null => {
+    return activeProviderRef.current ?? window.ethereum ?? null;
+  }, []);
+
   // Balances
   const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
   const [ethBalance, setEthBalance] = useState<string | null>(null);
   const [usdcAllowance, setUsdcAllowance] = useState<string | null>(null);
+  const [wrongNetwork, setWrongNetwork] = useState(false);
 
   // ETH Price
   const [ethPriceUsd, setEthPriceUsd] = useState<number | null>(null);
@@ -138,10 +166,11 @@ export default function Presale() {
 
   // Fetch ETH price from Chainlink
   const fetchEthPrice = useCallback(async () => {
-    if (!window.ethereum) return;
+    const ethereum = getEthereum();
+    if (!ethereum) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const priceFeed = new ethers.Contract(CONTRACTS.ETH_USD_PRICE_FEED, CHAINLINK_ABI, provider);
       const [, answer] = await priceFeed.latestRoundData();
       const price = Number(answer) / 1e8; // Chainlink uses 8 decimals
@@ -164,16 +193,43 @@ export default function Presale() {
           setUsdcBalance(null);
           setEthBalance(null);
           setUsdcAllowance(null);
+          setWrongNetwork(false);
         } else {
           setConnectedAddress(accs[0]);
         }
       };
 
+      const handleChainChanged = () => {
+        setUsdcBalance(null);
+        setEthBalance(null);
+        setUsdcAllowance(null);
+        setWrongNetwork(false);
+        // Re-fetch with new chain — reloading is the safest approach per MetaMask docs,
+        // but re-fetching is smoother UX
+        checkWalletConnection();
+      };
+
       window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
       return () => {
         window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum?.removeListener('chainChanged', handleChainChanged);
       };
     }
+  }, []);
+
+  // Discover available wallets via EIP-6963
+  useEffect(() => {
+    const wallets: EIP6963ProviderDetail[] = [];
+    const handleAnnounce = (event: CustomEvent<EIP6963ProviderDetail>) => {
+      if (!wallets.find(w => w.info.uuid === event.detail.info.uuid)) {
+        wallets.push(event.detail);
+        setDiscoveredWallets([...wallets]);
+      }
+    };
+    window.addEventListener('eip6963:announceProvider', handleAnnounce);
+    window.dispatchEvent(new Event('eip6963:requestProvider'));
+    return () => window.removeEventListener('eip6963:announceProvider', handleAnnounce);
   }, []);
 
   // Fetch ETH price on mount and periodically
@@ -207,16 +263,23 @@ export default function Presale() {
     }
   };
 
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      setTxStatus({ type: 'error', message: 'Please install MetaMask or another Web3 wallet' });
-      return;
-    }
-
+  const connectWithProvider = async (providerDetail: EIP6963ProviderDetail) => {
+    setShowWalletPicker(false);
     setTxStatus({ type: 'connecting' });
-
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+      // Revoke existing site permission so MetaMask shows ALL accounts, not just the previously authorized one.
+      try {
+        await providerDetail.provider.request({
+          method: 'wallet_revokePermissions',
+          params: [{ eth_accounts: {} }],
+        });
+      } catch {
+        // wallet_revokePermissions not supported by this wallet — continue
+      }
+      // Fresh request: MetaMask will now show the full account picker
+      const accounts = await providerDetail.provider.request({ method: 'eth_requestAccounts' }) as string[];
+      if (!accounts.length) throw new Error('No accounts returned');
+      activeProviderRef.current = providerDetail.provider;
       setConnectedAddress(accounts[0]);
       setTxStatus({ type: 'idle' });
     } catch (err: unknown) {
@@ -229,11 +292,51 @@ export default function Presale() {
     }
   };
 
+  const connectWallet = async () => {
+    if (discoveredWallets.length === 0 && !window.ethereum) {
+      setTxStatus({ type: 'error', message: 'Please install MetaMask or another Web3 wallet' });
+      return;
+    }
+    if (discoveredWallets.length > 1) {
+      setShowWalletPicker(true);
+      return;
+    }
+    // Single wallet available — connect directly
+    const single = discoveredWallets[0];
+    if (single) {
+      await connectWithProvider(single);
+    } else {
+      // Fallback for wallets that don't support EIP-6963
+      setTxStatus({ type: 'connecting' });
+      try {
+        try {
+          await window.ethereum!.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
+        } catch { /* not supported — continue */ }
+        const accounts = await window.ethereum!.request({ method: 'eth_requestAccounts' }) as string[];
+        if (!accounts.length) throw new Error('No accounts returned');
+        setConnectedAddress(accounts[0]);
+        setTxStatus({ type: 'idle' });
+      } catch (err: unknown) {
+        const error = err as { code?: number; message?: string };
+        setTxStatus({ type: 'error', message: error.code === 4001 ? 'Connection rejected.' : 'Failed to connect wallet' });
+      }
+    }
+  };
+
   const fetchUsdcBalance = async () => {
-    if (!window.ethereum || !connectedAddress) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
+      const network = await provider.getNetwork();
+      if (Number(network.chainId) !== PRESALE_CONFIG.expectedChainId) {
+        setWrongNetwork(true);
+        setUsdcBalance(null);
+        setEthBalance(null);
+        return;
+      }
+      setWrongNetwork(false);
       const usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, provider);
       const balance = await usdcContract.balanceOf(connectedAddress);
       setUsdcBalance(ethers.formatUnits(balance, 6));
@@ -244,10 +347,11 @@ export default function Presale() {
   };
 
   const fetchEthBalance = async () => {
-    if (!window.ethereum || !connectedAddress) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const balance = await provider.getBalance(connectedAddress);
       setEthBalance(ethers.formatEther(balance));
     } catch (err) {
@@ -257,10 +361,11 @@ export default function Presale() {
   };
 
   const fetchUsdcAllowance = async () => {
-    if (!window.ethereum || !connectedAddress) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, provider);
       const allowance = await usdcContract.allowance(connectedAddress, CONTRACTS.HLRR);
       setUsdcAllowance(ethers.formatUnits(allowance, 6));
@@ -271,10 +376,11 @@ export default function Presale() {
   };
 
   const fetchPresaleStats = async () => {
-    if (!window.ethereum) return;
+    const ethereum = getEthereum();
+    if (!ethereum) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const hlrrContract = new ethers.Contract(CONTRACTS.HLRR, HLRR_ABI, provider);
       const stats = await hlrrContract.getPresaleStats();
       setPresaleStats({
@@ -289,10 +395,11 @@ export default function Presale() {
   };
 
   const fetchUserContribution = async () => {
-    if (!window.ethereum || !connectedAddress) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
       const hlrrContract = new ethers.Contract(CONTRACTS.HLRR, HLRR_ABI, provider);
       const contribution = await hlrrContract.getPresaleContribution(connectedAddress);
       setUserContribution(ethers.formatUnits(contribution, 6));
@@ -302,12 +409,13 @@ export default function Presale() {
   };
 
   const handleBuyWithUsdc = async () => {
-    if (!window.ethereum || !connectedAddress || !contributionAmount) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !contributionAmount) return;
 
     setTxStatus({ type: 'checking' });
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
 
       // Check network
       const network = await provider.getNetwork();
@@ -365,12 +473,13 @@ export default function Presale() {
   };
 
   const handleBuyWithEth = async () => {
-    if (!window.ethereum || !connectedAddress || !contributionAmount || !ethPriceUsd) return;
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !contributionAmount || !ethPriceUsd) return;
 
     setTxStatus({ type: 'checking' });
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
 
       // Check network
       const network = await provider.getNetwork();
@@ -581,6 +690,81 @@ export default function Presale() {
           </div>
         )}
 
+        {/* Wallet Picker Modal */}
+        {showWalletPicker && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }} onClick={() => setShowWalletPicker(false)}>
+            <div style={{
+              background: '#1e293b',
+              border: '1px solid rgba(34,211,238,0.3)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              minWidth: '280px',
+              maxWidth: '360px',
+              width: '90%',
+            }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 1rem', color: 'var(--accent)', fontSize: '1.1rem' }}>Choose Wallet</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {discoveredWallets.map(w => (
+                  <button
+                    key={w.info.uuid}
+                    type="button"
+                    onClick={() => connectWithProvider(w)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.875rem 1rem',
+                      background: 'rgba(34,211,238,0.06)',
+                      border: '1px solid rgba(34,211,238,0.25)',
+                      borderRadius: '8px',
+                      color: 'var(--text)',
+                      fontSize: '1rem', fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'border-color 0.2s',
+                      textAlign: 'left',
+                    }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(34,211,238,0.25)'}
+                  >
+                    {w.info.icon && (
+                      <img src={w.info.icon} alt="" style={{ width: '28px', height: '28px', borderRadius: '6px' }} />
+                    )}
+                    {w.info.name}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWalletPicker(false)}
+                style={{
+                  marginTop: '1rem', width: '100%', padding: '0.5rem',
+                  background: 'transparent', border: '1px solid #374151',
+                  borderRadius: '6px', color: 'var(--muted)', fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Wrong Network Warning */}
+        {wrongNetwork && connectedAddress && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '8px',
+            padding: '0.85rem 1rem',
+            marginBottom: '1rem',
+            fontSize: '0.9rem',
+            color: '#f87171',
+          }}>
+            Wrong network detected. Please switch your wallet to <strong>{PRESALE_CONFIG.networkName}</strong> to see your balances and participate in the presale.
+          </div>
+        )}
+
         {/* Wallet Connection */}
         <div style={{
           background: 'var(--card)',
@@ -607,7 +791,7 @@ export default function Presale() {
               </div>
               <button
                 type="button"
-                onClick={disconnectWallet}
+                onClick={discoveredWallets.length > 1 ? () => setShowWalletPicker(true) : disconnectWallet}
                 style={{
                   width: '100%',
                   padding: '0.5rem 1rem',
@@ -628,7 +812,7 @@ export default function Presale() {
                   e.currentTarget.style.color = 'var(--muted)';
                 }}
               >
-                Change Wallet
+                {discoveredWallets.length > 1 ? 'Switch Wallet' : 'Change Wallet'}
               </button>
             </div>
           ) : (

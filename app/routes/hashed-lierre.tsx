@@ -14,14 +14,18 @@ export default function HashedLierre() {
   return (
     <main>
       <section className="card">
-        <h2>Hashed Lierre Token (HLRR)</h2>
+        <h2 className="hlrr-title">
+          <img src="/HLRR.svg" alt="HLRR Logo" className="hlrr-logo" />
+          Hashed Lierre Token (HLRR)
+        </h2>
         
         <div className="intro">
+          <img src="/HLRR.svg" alt="HLRR Logo" className="hlrr-logo-large" />
           <p>
-            The Hashed Lierre Token (HLRR) is a utility and access token that powers the NYK Labs platform. 
-            It is used to unlock features, access developer tools and services, participate in ecosystem programs, 
-            and coordinate activity across applications built by NYK Labs. The token is not intended to be a 
-            security or financial instrument and does not represent ownership, equity, or any claim on the 
+            Hashed Lierre (HLRR) is a utility and access token that powers the NYK Labs platform.
+            It is used to unlock features, access developer tools and services, participate in ecosystem programs,
+            and coordinate activity across applications built by NYK Labs. The token is not intended to be a
+            security or financial instrument and does not represent ownership, equity, or any claim on the
             assets, profits, or operations of NYK Labs.
           </p>
         </div>
@@ -37,6 +41,54 @@ export default function HashedLierre() {
               <span className="address-label">Treasury Address:</span>
               <code className="address-value">{TREASURY_ADDRESS}</code>
             </div>
+          </div>
+        </div>
+
+        <h3>Smart Contract</h3>
+        <div className="contract-section">
+          <div className="verified-badge">
+            <span className="verified-icon">✓</span>
+            <span>Source Verified &amp; Published on Sourcify</span>
+          </div>
+          <a
+            href="https://solidityscan.com/quickscan/0x5e1583d48bcfd60de77138ea195f3efbe128405d/blockscout/base?ref=blockscout"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="security-score-badge"
+          >
+            <span className="security-score-label">Security Score</span>
+            <span className="security-score-value">89.7%</span>
+            <span className="security-score-source">SolidityScan via Blockscout</span>
+          </a>
+
+          <div className="explorer-links">
+            <a
+              href="https://repo.sourcify.dev/8453/0x5E1583d48bcFd60de77138ea195f3EFbe128405d"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="explorer-link"
+            >
+              <span className="explorer-link-label">Sourcify</span>
+              <span className="explorer-link-desc">Verified source code</span>
+            </a>
+            <a
+              href="https://base.blockscout.com/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d?tab=contract"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="explorer-link"
+            >
+              <span className="explorer-link-label">Blockscout</span>
+              <span className="explorer-link-desc">Contract &amp; ABI</span>
+            </a>
+            <a
+              href="https://basescan.org/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="explorer-link"
+            >
+              <span className="explorer-link-label">Basescan</span>
+              <span className="explorer-link-desc">Transactions &amp; holders</span>
+            </a>
           </div>
         </div>
 
@@ -129,7 +181,7 @@ export default function HashedLierre() {
         </div>
 
         <h3>Token Distribution</h3>
-        
+
         <div className="distribution-chart">
           <div className="dist-item airdrop">
             <div className="dist-header">
@@ -203,13 +255,27 @@ export default function HashedLierre() {
               <span>Staking Reserve (Released via rewards)</span>
               <span className="summary-value">40,000,000 HLRR (33.3%)</span>
             </div>
+            <div className="summary-row summary-row-staked">
+              <div className="summary-staked-main">
+                <span>Current Staked</span>
+                <div className="summary-staked-breakdown">
+                  <span>Treasury (30M owned): <strong>30M staked — 100%</strong></span>
+                  <span>Developer &amp; Investor (40M owned): <strong>70%+ staked</strong></span>
+                </div>
+              </div>
+              <span className="summary-value">60,000,000+ HLRR</span>
+            </div>
+            <div className="summary-row">
+              <span>Active Circulation</span>
+              <span className="summary-value">&lt;20,000,000 HLRR</span>
+            </div>
             <div className="summary-row total">
               <span>Total Maximum Supply</span>
               <span className="summary-value">120,000,000 HLRR (100%)</span>
             </div>
           </div>
           <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(34, 211, 238, 0.05)', borderRadius: '6px', fontSize: '0.9rem', lineHeight: '1.6' }}>
-            <strong style={{ color: 'var(--accent)' }}>Note:</strong> The 80M initial mint is distributed as: Airdrop & Presale (10M combined), Developers (20M), Investors (20M), and Treasury (30M).
+            <strong style={{ color: 'var(--accent)' }}>Note:</strong> The 80M initial mint is allocated as: Airdrop & Presale (10M combined), Developers (20M), Investors (20M), and Treasury (30M).
           </div>
         </div>
 
@@ -223,7 +289,22 @@ export default function HashedLierre() {
       </section>
 
       <style>{`
+        .hlrr-title {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .hlrr-logo {
+          width: 2rem;
+          height: 2rem;
+          object-fit: contain;
+        }
+
         .intro {
+          display: flex;
+          align-items: center;
+          gap: 2rem;
           background: rgba(34, 211, 238, 0.1);
           border-left: 4px solid var(--accent);
           padding: 1.5rem;
@@ -235,6 +316,24 @@ export default function HashedLierre() {
           margin: 0;
           font-size: 1.1rem;
           line-height: 1.7;
+          flex: 1;
+        }
+
+        .hlrr-logo-large {
+          width: 120px;
+          height: 120px;
+          object-fit: contain;
+          flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+          .intro {
+            flex-direction: column;
+          }
+          .hlrr-logo-large {
+            width: 80px;
+            height: 80px;
+          }
         }
 
         .address-section {
@@ -289,6 +388,103 @@ export default function HashedLierre() {
           margin-bottom: 1.5rem;
           padding-bottom: 0.5rem;
           border-bottom: 2px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .contract-section {
+          margin: 1.5rem 0 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .verified-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px solid rgba(34, 197, 94, 0.4);
+          color: #4ade80;
+          padding: 0.6rem 1.1rem;
+          border-radius: 6px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          width: fit-content;
+        }
+
+        .verified-icon {
+          font-size: 1.1rem;
+          font-weight: 700;
+        }
+
+        .security-score-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: rgba(17, 24, 39, 0.6);
+          border: 1px solid rgba(34, 197, 94, 0.35);
+          border-radius: 8px;
+          padding: 0.85rem 1.4rem;
+          text-decoration: none;
+          width: fit-content;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .security-score-badge:hover {
+          border-color: #4ade80;
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        }
+
+        .security-score-label {
+          font-size: 0.85rem;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .security-score-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #4ade80;
+        }
+
+        .security-score-source {
+          font-size: 0.8rem;
+          color: var(--muted);
+        }
+
+        .explorer-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .explorer-link {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          background: rgba(17, 24, 39, 0.6);
+          border: 1px solid rgba(34, 211, 238, 0.3);
+          border-radius: 8px;
+          padding: 1rem 1.4rem;
+          text-decoration: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          min-width: 160px;
+        }
+
+        .explorer-link:hover {
+          border-color: var(--accent);
+          box-shadow: 0 4px 12px rgba(34, 211, 238, 0.2);
+        }
+
+        .explorer-link-label {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--accent);
+        }
+
+        .explorer-link-desc {
+          font-size: 0.82rem;
+          color: var(--muted);
         }
 
         .utility-section {
@@ -398,6 +594,30 @@ export default function HashedLierre() {
           padding: 1rem;
           background: rgba(34, 211, 238, 0.05);
           border-radius: 6px;
+        }
+
+        .summary-row-staked {
+          align-items: flex-start;
+        }
+
+        .summary-staked-main {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+        }
+
+        .summary-staked-breakdown {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          font-size: 0.82rem;
+          color: var(--muted);
+          padding-left: 0.75rem;
+          border-left: 2px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .summary-staked-breakdown strong {
+          color: var(--accent);
         }
 
         .distribution-chart {
