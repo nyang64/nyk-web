@@ -115,19 +115,17 @@ export function useWallet() {
    * Throws on rejection so callers can handle txStatus.
    */
   const connectWithProvider = useCallback(
-    async (detail: EIP6963ProviderDetail): Promise<string> => {
+    async (detail: EIP6963ProviderDetail, forceAccountPicker = false): Promise<string> => {
       setShowWalletPicker(false);
-      // Revoke cached permission so the wallet shows the full account picker.
-      try {
+      if (forceAccountPicker) {
+        // wallet_requestPermissions opens the account selection UI in the wallet.
         await detail.provider.request({
-          method: "wallet_revokePermissions",
+          method: "wallet_requestPermissions",
           params: [{ eth_accounts: {} }],
         });
-      } catch {
-        // wallet_revokePermissions not supported — continue
       }
       const accounts = (await detail.provider.request({
-        method: "eth_requestAccounts",
+        method: "eth_accounts",
       })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");
       activeProviderRef.current = detail.provider;
@@ -138,6 +136,24 @@ export function useWallet() {
     },
     []
   );
+
+  /**
+   * Force the wallet to show the account picker so the user can switch accounts.
+   * Works with the currently active provider (or falls back to window.ethereum).
+   */
+  const switchAccount = useCallback(async (): Promise<string | null> => {
+    const provider = activeProviderRef.current ?? window.ethereum ?? null;
+    if (!provider) throw new Error("No wallet connected");
+    // wallet_requestPermissions forces the wallet UI to show the account picker.
+    await provider.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+    const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
+    if (!accounts.length) return null;
+    setConnectedAddress(accounts[0]);
+    return accounts[0];
+  }, []);
 
   /**
    * Connect wallet.
@@ -154,17 +170,9 @@ export function useWallet() {
       return null;
     }
     const single = discoveredWallets[0];
-    if (single) return connectWithProvider(single);
+    if (single) return connectWithProvider(single, true);
 
     // Fallback for non-EIP-6963 wallets
-    try {
-      await window.ethereum!.request({
-        method: "wallet_revokePermissions",
-        params: [{ eth_accounts: {} }],
-      });
-    } catch {
-      // not supported — continue
-    }
     const accounts = (await window.ethereum!.request({
       method: "eth_requestAccounts",
     })) as string[];
@@ -191,6 +199,7 @@ export function useWallet() {
     getEthereum,
     connectWithProvider,
     connectWallet,
+    switchAccount,
     disconnectWallet,
   };
 }

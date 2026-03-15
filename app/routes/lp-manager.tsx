@@ -242,6 +242,7 @@ export default function LpManager() {
     getEthereum,
     connectWithProvider: walletConnectWithProvider,
     connectWallet: walletConnect,
+    switchAccount: walletSwitchAccount,
     disconnectWallet: walletDisconnect,
   } = useWallet();
 
@@ -372,6 +373,20 @@ export default function LpManager() {
       setTxStatus({
         type: "error",
         message: e.code === 4001 ? "Connection rejected." : (e.message || "Failed to connect wallet."),
+      });
+    }
+  };
+
+  const switchAccount = async () => {
+    setTxStatus({ type: "connecting" });
+    try {
+      await walletSwitchAccount();
+      setTxStatus({ type: "idle" });
+    } catch (err: unknown) {
+      const e = err as { code?: number; message?: string };
+      setTxStatus({
+        type: "error",
+        message: e.code === 4001 ? "Cancelled." : (e.message || "Failed to switch account."),
       });
     }
   };
@@ -939,7 +954,7 @@ export default function LpManager() {
           ) : (
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button
-                onClick={connectWallet}
+                onClick={switchAccount}
                 disabled={isSubmitting}
                 style={{ ...S.btn, width: "auto", padding: "0.4rem 1rem", fontSize: "0.8rem", background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.5)", color: "#22d3ee" }}
               >
