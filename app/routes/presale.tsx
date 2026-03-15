@@ -75,6 +75,7 @@ export default function Presale() {
     getEthereum,
     connectWithProvider: walletConnectWithProvider,
     connectWallet: walletConnect,
+    switchAccount: walletSwitchAccount,
     disconnectWallet: walletDisconnect,
   } = useWallet();
 
@@ -446,6 +447,20 @@ export default function Presale() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  const switchAccount = async () => {
+    setTxStatus({ type: 'connecting' });
+    try {
+      await walletSwitchAccount();
+      setTxStatus({ type: 'idle' });
+    } catch (err: unknown) {
+      const e = err as { code?: number; message?: string };
+      setTxStatus({
+        type: 'error',
+        message: e.code === 4001 ? 'Cancelled.' : (e.message || 'Failed to switch account.'),
+      });
+    }
+  };
+
   const disconnectWallet = () => {
     walletDisconnect();
     setContributionAmount('');
@@ -626,31 +641,41 @@ export default function Presale() {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={discoveredWallets.length > 1 ? () => setShowWalletPicker(true) : disconnectWallet}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 1rem',
-                  background: 'transparent',
-                  color: 'var(--muted)',
-                  border: '1px solid #374151',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--accent)';
-                  e.currentTarget.style.color = 'var(--accent)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = '#374151';
-                  e.currentTarget.style.color = 'var(--muted)';
-                }}
-              >
-                {discoveredWallets.length > 1 ? 'Switch Wallet' : 'Change Wallet'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={switchAccount}
+                  disabled={txStatus.type === 'connecting'}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 1rem',
+                    background: 'rgba(34,211,238,0.1)',
+                    color: '#22d3ee',
+                    border: '1px solid rgba(34,211,238,0.4)',
+                    borderRadius: '6px',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Switch Account
+                </button>
+                <button
+                  type="button"
+                  onClick={disconnectWallet}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 1rem',
+                    background: 'rgba(239,68,68,0.1)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239,68,68,0.4)',
+                    borderRadius: '6px',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Disconnect
+                </button>
+              </div>
             </div>
           ) : (
             <button
