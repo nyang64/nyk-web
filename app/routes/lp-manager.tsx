@@ -336,6 +336,11 @@ export default function LpManager() {
     if (!connectedAddress) setBalances({});
   }, [connectedAddress]);
 
+  // Clear success status when any LP creation form field changes
+  useEffect(() => {
+    setTxStatus((s) => (s.type === "success" ? { type: "idle" } : s));
+  }, [protocol, token0Key, token1Key, selectedFee, selectedSpacing, startingPrice, minPrice, maxPrice, amount0, amount1]);
+
   // Auto-populate vault address and lock NFPM when chain / protocol changes
   useEffect(() => {
     if (chainId) {
