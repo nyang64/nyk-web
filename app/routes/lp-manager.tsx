@@ -39,46 +39,25 @@ const AERODROME_ADDRESSES = {
   nfpm: "0x827922686190790b37229fd06084350E74485b72",
 };
 
-interface TokenConfig {
+interface WalletToken {
+  address: string;
   symbol: string;
   decimals: number;
+  balance: string; // human-readable, e.g. "1234.56"
 }
 
-const TOKENS: Record<number, Record<string, TokenConfig & { address: string }>> = {
-  [CHAIN.BASE_MAINNET]: {
-    HLRR: {
-      address: "0x5E1583d48bcFd60de77138ea195f3EFbe128405d",
-      symbol: "HLRR",
-      decimals: 8,
-    },
-    USDC: {
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      symbol: "USDC",
-      decimals: 6,
-    },
-    WETH: {
-      address: "0x4200000000000000000000000000000000000006",
-      symbol: "WETH",
-      decimals: 18,
-    },
-  },
-  [CHAIN.BASE_SEPOLIA]: {
-    HLRR: {
-      address: "0x75f9A6289B40BA7b32C4D56300a53B208dD8E7F4",
-      symbol: "HLRR",
-      decimals: 8,
-    },
-    USDC: {
-      address: "0x90BD93418b87A9690F79B7449c1aECe018Fb4376",
-      symbol: "USDC",
-      decimals: 6,
-    },
-    WETH: {
-      address: "0x4200000000000000000000000000000000000006",
-      symbol: "WETH",
-      decimals: 18,
-    },
-  },
+// Seed list per chain — only tokens with a non-zero balance will appear in the picker
+const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
+  [CHAIN.BASE_MAINNET]: [
+    { address: "0x5E1583d48bcFd60de77138ea195f3EFbe128405d", symbol: "HLRR", decimals: 8 },
+    { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6 },
+    { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
+  ],
+  [CHAIN.BASE_SEPOLIA]: [
+    { address: "0x75f9A6289B40BA7b32C4D56300a53B208dD8E7F4", symbol: "HLRR", decimals: 8 },
+    { address: "0x90BD93418b87A9690F79B7449c1aECe018Fb4376", symbol: "USDC", decimals: 6 },
+    { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
+  ],
 };
 
 // ─── Fee tier / tick spacing mappings ────────────────────────────────────────
@@ -223,9 +202,6 @@ function snapTick(tick: number, spacing: number, isLower: boolean): number {
   }
 }
 
-// ─── Token key type ───────────────────────────────────────────────────────────
-
-type TokenKey = "HLRR" | "USDC" | "WETH";
 type Protocol = "uniswap" | "aerodrome";
 
 type TxStatus =
@@ -257,8 +233,8 @@ export default function LpManager() {
 
   // Protocol / form state
   const [protocol, setProtocol] = useState<Protocol>("uniswap");
-  const [token0Key, setToken0Key] = useState<TokenKey>("HLRR");
-  const [token1Key, setToken1Key] = useState<TokenKey>("USDC");
+  const [token0Addr, setToken0Addr] = useState<string>("");
+  const [token1Addr, setToken1Addr] = useState<string>("");
   const [selectedFee, setSelectedFee] = useState(10000);
   const [selectedSpacing, setSelectedSpacing] = useState(200);
   const [startingPrice, setStartingPrice] = useState("");
@@ -267,8 +243,11 @@ export default function LpManager() {
   const [amount0, setAmount0] = useState("");
   const [amount1, setAmount1] = useState("");
 
-  // Balances
-  const [balances, setBalances] = useState<Partial<Record<TokenKey, string>>>({});
+  // Wallet tokens (fetched dynamically, filtered to balance > 0)
+  const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
+  const [customTokens, setCustomTokens] = useState<Omit<WalletToken, "balance">[]>([]);
+  const [customTokenInput, setCustomTokenInput] = useState("");
+  const [customTokenError, setCustomTokenError] = useState("");
 
   // Status
   const [txStatus, setTxStatus] = useState<TxStatus>({ type: "idle" });
@@ -296,12 +275,9 @@ export default function LpManager() {
   const isSupported = chainId === CHAIN.BASE_MAINNET || chainId === CHAIN.BASE_SEPOLIA;
   const isAeroOnTestnet = protocol === "aerodrome" && chainId === CHAIN.BASE_SEPOLIA;
 
-  const tokens = chainId ? TOKENS[chainId] ?? TOKENS[CHAIN.BASE_MAINNET] : TOKENS[CHAIN.BASE_MAINNET];
-  const TOKEN_KEYS: TokenKey[] = ["HLRR", "USDC", "WETH"];
-
-  const t0 = tokens[token0Key];
-  const t1 = tokens[token1Key];
-  const sameToken = token0Key === token1Key;
+  const t0 = walletTokens.find((t) => t.address.toLowerCase() === token0Addr.toLowerCase());
+  const t1 = walletTokens.find((t) => t.address.toLowerCase() === token1Addr.toLowerCase());
+  const sameToken = !!token0Addr && token0Addr.toLowerCase() === token1Addr.toLowerCase();
 
   const tickSpacing =
     protocol === "aerodrome"
@@ -310,6 +286,7 @@ export default function LpManager() {
 
   // Computed sqrtPriceX96 preview
   const sqrtPricePreview = (() => {
+    if (!t0 || !t1) return "";
     const p = parseFloat(startingPrice);
     if (!p || p <= 0) return "";
     try {
@@ -320,6 +297,7 @@ export default function LpManager() {
   })();
 
   const minTickPreview = (() => {
+    if (!t0 || !t1) return "";
     const p = parseFloat(minPrice);
     if (!p || p <= 0) return "";
     const raw = priceToTick(p, t0.decimals, t1.decimals);
@@ -327,6 +305,7 @@ export default function LpManager() {
   })();
 
   const maxTickPreview = (() => {
+    if (!t0 || !t1) return "";
     const p = parseFloat(maxPrice);
     if (!p || p <= 0) return "";
     const raw = priceToTick(p, t0.decimals, t1.decimals);
@@ -340,15 +319,15 @@ export default function LpManager() {
 
   // ─── Wallet setup ────────────────────────────────────────────────────────────
 
-  // Clear balances when wallet disconnects
+  // Clear wallet tokens when wallet disconnects
   useEffect(() => {
-    if (!connectedAddress) setBalances({});
+    if (!connectedAddress) { setWalletTokens([]); setToken0Addr(""); setToken1Addr(""); }
   }, [connectedAddress]);
 
   // Clear success status when any LP creation form field changes
   useEffect(() => {
     setTxStatus((s) => (s.type === "success" ? { type: "idle" } : s));
-  }, [protocol, token0Key, token1Key, selectedFee, selectedSpacing, startingPrice, minPrice, maxPrice, amount0, amount1]);
+  }, [protocol, token0Addr, token1Addr, selectedFee, selectedSpacing, startingPrice, minPrice, maxPrice, amount0, amount1]);
 
   // Auto-populate vault address and lock NFPM when chain / protocol changes
   useEffect(() => {
@@ -393,43 +372,82 @@ export default function LpManager() {
   };
 
   const switchAccount = () => {
-    setBalances({});
+    setWalletTokens([]);
+    setToken0Addr("");
+    setToken1Addr("");
     walletSwitchAccount();
   };
 
-  // ─── Balance fetching ────────────────────────────────────────────────────────
+  // ─── Wallet token discovery ───────────────────────────────────────────────────
 
-  const fetchBalances = useCallback(async () => {
+  const fetchWalletTokens = useCallback(async () => {
     const ethereum = getEthereum();
     if (!ethereum || !connectedAddress || !chainId) return;
-    const tokenMap = TOKENS[chainId];
-    if (!tokenMap) return;
+    const seed = KNOWN_TOKENS[chainId] ?? [];
+    // Merge seed + user-added custom tokens, deduplicated by address
+    const all = [
+      ...seed,
+      ...customTokens.filter(
+        (c) => !seed.some((s) => s.address.toLowerCase() === c.address.toLowerCase())
+      ),
+    ];
     try {
       const provider = new ethers.BrowserProvider(ethereum);
-      const results: Partial<Record<TokenKey, string>> = {};
+      const results: WalletToken[] = [];
       await Promise.all(
-        TOKEN_KEYS.map(async (key) => {
+        all.map(async (t) => {
           try {
-            const t = tokenMap[key];
             const contract = new ethers.Contract(t.address, ERC20_ABI, provider);
             const bal: bigint = await contract.balanceOf(connectedAddress);
-            results[key] = ethers.formatUnits(bal, t.decimals);
-          } catch {
-            results[key] = "—";
-          }
+            if (bal > 0n) {
+              results.push({ ...t, balance: ethers.formatUnits(bal, t.decimals) });
+            }
+          } catch { /* skip invalid/non-ERC20 */ }
         })
       );
-      setBalances(results);
-    } catch {
-      // silent
-    }
-  }, [connectedAddress, chainId, getEthereum]);
+      setWalletTokens(results);
+      // Keep or auto-select token addresses
+      setToken0Addr((prev) =>
+        results.some((t) => t.address.toLowerCase() === prev.toLowerCase())
+          ? prev : (results[0]?.address ?? "")
+      );
+      setToken1Addr((prev) =>
+        results.some((t) => t.address.toLowerCase() === prev.toLowerCase())
+          ? prev : (results[1]?.address ?? "")
+      );
+    } catch { /* silent */ }
+  }, [connectedAddress, chainId, customTokens, getEthereum]);
 
   useEffect(() => {
-    if (connectedAddress && chainId) {
-      fetchBalances();
+    if (connectedAddress && chainId) fetchWalletTokens();
+  }, [connectedAddress, chainId, fetchWalletTokens]);
+
+  const handleAddCustomToken = async () => {
+    setCustomTokenError("");
+    const addr = customTokenInput.trim();
+    if (!ethers.isAddress(addr)) {
+      setCustomTokenError("Invalid address.");
+      return;
     }
-  }, [connectedAddress, chainId, fetchBalances]);
+    if (walletTokens.some((t) => t.address.toLowerCase() === addr.toLowerCase())) {
+      setCustomTokenError("Token already in list.");
+      return;
+    }
+    const ethereum = getEthereum();
+    if (!ethereum) return;
+    try {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const contract = new ethers.Contract(addr, ERC20_ABI, provider);
+      const [symbol, decimals] = await Promise.all([
+        contract.symbol() as Promise<string>,
+        contract.decimals() as Promise<bigint>,
+      ]);
+      setCustomTokens((prev) => [...prev, { address: addr, symbol, decimals: Number(decimals) }]);
+      setCustomTokenInput("");
+    } catch {
+      setCustomTokenError("Could not fetch token info. Is this a valid ERC-20?");
+    }
+  };
 
   // ─── Create LP ───────────────────────────────────────────────────────────────
 
@@ -458,13 +476,12 @@ export default function LpManager() {
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = await provider.getSigner();
 
-      // Sort tokens by address (token0 < token1)
-      const raw0 = { key: token0Key, ...t0 };
-      const raw1 = { key: token1Key, ...t1 };
+      if (!t0 || !t1) throw new Error("Token info not loaded. Select both tokens.");
 
-      const sorted0 = raw0.address.toLowerCase() < raw1.address.toLowerCase() ? raw0 : raw1;
-      const sorted1 = raw0.address.toLowerCase() < raw1.address.toLowerCase() ? raw1 : raw0;
-      const wasSwapped = sorted0.key !== token0Key;
+      // Sort tokens by address (Uniswap requires token0 < token1)
+      const sorted0 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1;
+      const sorted1 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0;
+      const wasSwapped = sorted0.address.toLowerCase() !== t0.address.toLowerCase();
 
       // Recalculate prices/ticks using sorted order
       const humanPrice = parseFloat(startingPrice);
@@ -603,7 +620,7 @@ export default function LpManager() {
 
       setTxStatus({ type: "success", txHash: receipt.hash, tokenId });
       if (tokenId !== "unknown") setLockTokenId(tokenId);
-      fetchBalances();
+      fetchWalletTokens();
     } catch (err: unknown) {
       const e = err as { code?: number | string; reason?: string; message?: string };
       if (e.code === 4001 || e.code === "ACTION_REJECTED") {
@@ -804,6 +821,7 @@ export default function LpManager() {
     !!connectedAddress &&
     isSupported &&
     !isAeroOnTestnet &&
+    !!t0 && !!t1 &&
     !sameToken &&
     !!startingPrice &&
     parseFloat(startingPrice) > 0 &&
@@ -831,9 +849,9 @@ export default function LpManager() {
       case "connecting":
         return "Connecting wallet...";
       case "approving_token0":
-        return `Approving ${token0Key}...`;
+        return `Approving ${t0?.symbol ?? token0Addr.slice(0, 8)}...`;
       case "approving_token1":
-        return `Approving ${token1Key}...`;
+        return `Approving ${t1?.symbol ?? token1Addr.slice(0, 8)}...`;
       case "creating_pool":
         return "Creating pool (if needed)...";
       case "minting":
@@ -1068,53 +1086,78 @@ export default function LpManager() {
         {/* Token pair */}
         <div style={S.card}>
           <p style={S.sectionTitle}>Token Pair</p>
+          {walletTokens.length === 0 && connectedAddress && isSupported && (
+            <p style={{ ...S.hint, marginBottom: "0.75rem" }}>
+              No tokens with balance found in wallet. Add a token address below.
+            </p>
+          )}
           <div style={S.row}>
             {/* Token0 */}
             <div>
               <label style={S.label}>Token 0</label>
               <select
                 style={S.select}
-                value={token0Key}
-                onChange={(e) => setToken0Key(e.target.value as TokenKey)}
+                value={token0Addr}
+                onChange={(e) => setToken0Addr(e.target.value)}
+                disabled={walletTokens.length === 0}
               >
-                {TOKEN_KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
+                {walletTokens.length === 0 && <option value="">— no tokens —</option>}
+                {walletTokens.map((t) => (
+                  <option key={t.address} value={t.address}>
+                    {t.symbol} ({parseFloat(t.balance).toFixed(4)})
                   </option>
                 ))}
               </select>
-              {balances[token0Key] !== undefined && (
-                <p style={{ ...S.hint, marginTop: "0.4rem" }}>
-                  Balance: {parseFloat(balances[token0Key] ?? "0").toFixed(4)} {token0Key}
-                </p>
-              )}
             </div>
             {/* Token1 */}
             <div>
               <label style={S.label}>Token 1</label>
               <select
                 style={S.select}
-                value={token1Key}
-                onChange={(e) => setToken1Key(e.target.value as TokenKey)}
+                value={token1Addr}
+                onChange={(e) => setToken1Addr(e.target.value)}
+                disabled={walletTokens.length === 0}
               >
-                {TOKEN_KEYS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
+                {walletTokens.length === 0 && <option value="">— no tokens —</option>}
+                {walletTokens.map((t) => (
+                  <option key={t.address} value={t.address}>
+                    {t.symbol} ({parseFloat(t.balance).toFixed(4)})
                   </option>
                 ))}
               </select>
-              {balances[token1Key] !== undefined && (
-                <p style={{ ...S.hint, marginTop: "0.4rem" }}>
-                  Balance: {parseFloat(balances[token1Key] ?? "0").toFixed(4)} {token1Key}
-                </p>
-              )}
             </div>
           </div>
           {sameToken && (
             <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "0.5rem" }}>
-              Token0 and Token1 must be different.
+              Token 0 and Token 1 must be different.
             </p>
           )}
+          {/* Add custom token */}
+          <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <input
+                style={{ ...S.input, marginBottom: 0 }}
+                placeholder="Add token by address (0x…)"
+                value={customTokenInput}
+                onChange={(e) => { setCustomTokenInput(e.target.value); setCustomTokenError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCustomToken()}
+              />
+              {customTokenError && (
+                <p style={{ color: "#ef4444", fontSize: "0.78rem", marginTop: "0.25rem" }}>{customTokenError}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleAddCustomToken}
+              disabled={!customTokenInput.trim() || !connectedAddress}
+              style={{ ...S.btn, width: "auto", padding: "0.5rem 1rem", fontSize: "0.85rem", marginTop: 0,
+                background: customTokenInput.trim() && connectedAddress ? "var(--accent)" : "rgba(255,255,255,0.05)",
+                color: customTokenInput.trim() && connectedAddress ? "#0f172a" : "#4b5563",
+              }}
+            >
+              Add
+            </button>
+          </div>
         </div>
 
         {/* Fee tier / tick spacing */}
@@ -1159,7 +1202,7 @@ export default function LpManager() {
         <div style={S.card}>
           <p style={S.sectionTitle}>Starting Price</p>
           <label style={S.label}>
-            {token1Key} per {token0Key}
+            {t1?.symbol ?? "Token1"} per {t0?.symbol ?? "Token0"}
           </label>
           <input
             type="number"
@@ -1181,7 +1224,7 @@ export default function LpManager() {
           <div style={S.row}>
             <div>
               <label style={S.label}>
-                Min Price ({token1Key}/{token0Key})
+                Min Price ({t1?.symbol ?? "T1"}/{t0?.symbol ?? "T0"})
               </label>
               <input
                 type="number"
@@ -1196,7 +1239,7 @@ export default function LpManager() {
             </div>
             <div>
               <label style={S.label}>
-                Max Price ({token1Key}/{token0Key})
+                Max Price ({t1?.symbol ?? "T1"}/{t0?.symbol ?? "T0"})
               </label>
               <input
                 type="number"
@@ -1222,7 +1265,7 @@ export default function LpManager() {
           <p style={S.sectionTitle}>Deposit Amounts</p>
           <div style={S.row}>
             <div>
-              <label style={S.label}>{token0Key} amount</label>
+              <label style={S.label}>{t0?.symbol ?? "Token 0"} amount</label>
               <input
                 type="number"
                 min="0"
@@ -1232,14 +1275,12 @@ export default function LpManager() {
                 value={amount0}
                 onChange={(e) => setAmount0(e.target.value)}
               />
-              {balances[token0Key] !== undefined && (
-                <p style={S.hint}>
-                  Wallet: {parseFloat(balances[token0Key] ?? "0").toFixed(4)} {token0Key}
-                </p>
+              {t0 && (
+                <p style={S.hint}>Wallet: {parseFloat(t0.balance).toFixed(4)} {t0.symbol}</p>
               )}
             </div>
             <div>
-              <label style={S.label}>{token1Key} amount</label>
+              <label style={S.label}>{t1?.symbol ?? "Token 1"} amount</label>
               <input
                 type="number"
                 min="0"
@@ -1249,10 +1290,8 @@ export default function LpManager() {
                 value={amount1}
                 onChange={(e) => setAmount1(e.target.value)}
               />
-              {balances[token1Key] !== undefined && (
-                <p style={S.hint}>
-                  Wallet: {parseFloat(balances[token1Key] ?? "0").toFixed(4)} {token1Key}
-                </p>
+              {t1 && (
+                <p style={S.hint}>Wallet: {parseFloat(t1.balance).toFixed(4)} {t1.symbol}</p>
               )}
             </div>
           </div>
