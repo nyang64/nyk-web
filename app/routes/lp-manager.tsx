@@ -1137,7 +1137,7 @@ export default function LpManager() {
             <div style={{ flex: 1 }}>
               <input
                 style={{ ...S.input, marginBottom: 0 }}
-                placeholder="Add token by address (0x…)"
+                placeholder="Token not listed? Paste its contract address (0x…)"
                 value={customTokenInput}
                 onChange={(e) => { setCustomTokenInput(e.target.value); setCustomTokenError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCustomToken()}
