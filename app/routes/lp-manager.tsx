@@ -1360,11 +1360,17 @@ export default function LpManager() {
                 onChange={(e) => setLockUnlockTime(e.target.value)}
               />
             </div>
-            {lockUnlockDate && (
-              <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.3rem" }}>
-                Locks until: {new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).toLocaleString()}
-              </div>
-            )}
+            {lockUnlockDate && (() => {
+              const ts = new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`);
+              const isPast = ts.getTime() <= Date.now();
+              return (
+                <div style={{ fontSize: "0.78rem", marginTop: "0.3rem", color: isPast ? "#ef4444" : "#6b7280" }}>
+                  {isPast
+                    ? "⚠ Unlock date is in the past — choose a future date."
+                    : `Locks until: ${ts.toLocaleString()}`}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Vault address */}
@@ -1387,7 +1393,8 @@ export default function LpManager() {
             onClick={handleLockNFT}
             disabled={
               !connectedAddress || !lockNfpm || !lockTokenId || !lockUnlockDate || !vaultAddress ||
-              lockTxStatus.type === "approving" || lockTxStatus.type === "locking"
+              lockTxStatus.type === "approving" || lockTxStatus.type === "locking" ||
+              (!!lockUnlockDate && new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).getTime() <= Date.now())
             }
             style={{
               width: "100%",
