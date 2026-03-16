@@ -142,65 +142,8 @@ type LockTxStatus =
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
-// ─── Math helpers ─────────────────────────────────────────────────────────────
-
-function sqrtBigInt(n: bigint): bigint {
-  if (n < 0n) throw new RangeError("Square root of negative bigint");
-  if (n === 0n) return 0n;
-  let x = n;
-  let y = (x + 1n) / 2n;
-  while (y < x) {
-    x = y;
-    y = (x + n / x) / 2n;
-  }
-  return x;
-}
-
-function priceToSqrtPriceX96(
-  humanPrice: number,
-  token0Dec: number,
-  token1Dec: number
-): bigint {
-  // pool_price = humanPrice * 10^token1Dec / 10^token0Dec
-  // sqrtPriceX96 = sqrt(pool_price) * 2^96
-  // We scale up to avoid floating point loss: use 1e18 precision internally
-  const PRECISION = 10n ** 18n;
-  const Q96 = 2n ** 96n;
-
-  const decAdj = token1Dec - token0Dec;
-  // pool_price * PRECISION = humanPrice * 10^decAdj * PRECISION
-  // Represent as rational: numerator / denominator
-  let num: bigint;
-  let den: bigint;
-  // Work with humanPrice as integer * 1e18
-  const priceScaled = BigInt(Math.round(humanPrice * 1e18));
-  if (decAdj >= 0) {
-    num = priceScaled * 10n ** BigInt(decAdj) * PRECISION;
-    den = 10n ** 18n;
-  } else {
-    num = priceScaled * PRECISION;
-    den = 10n ** 18n * 10n ** BigInt(-decAdj);
-  }
-  // sqrtPriceX96 = sqrt(num / den) * Q96 = sqrt(num * Q96^2 / den)
-  const insideSqrt = (num * Q96 * Q96) / den;
-  return sqrtBigInt(insideSqrt);
-}
-
-function priceToTick(humanPrice: number, token0Dec: number, token1Dec: number): number {
-  // pool_price = humanPrice * 10^(token1Dec - token0Dec)
-  const poolPrice = humanPrice * Math.pow(10, token1Dec - token0Dec);
-  if (poolPrice <= 0) return 0;
-  return Math.floor(Math.log(poolPrice) / Math.log(1.0001));
-}
-
-function snapTick(tick: number, spacing: number, isLower: boolean): number {
-  const rounded = Math.round(tick / spacing) * spacing;
-  if (isLower) {
-    return tick < rounded ? rounded - spacing : rounded;
-  } else {
-    return tick > rounded ? rounded + spacing : rounded;
-  }
-}
+// ─── Math helpers (imported from shared utility) ──────────────────────────────
+import { priceToSqrtPriceX96, priceToTick, snapTick } from "../utils/lpMath";
 
 type Protocol = "uniswap" | "aerodrome";
 
@@ -279,36 +222,45 @@ export default function LpManager() {
   const t1 = walletTokens.find((t) => t.address.toLowerCase() === token1Addr.toLowerCase());
   const sameToken = !!token0Addr && token0Addr.toLowerCase() === token1Addr.toLowerCase();
 
+  // Sorted pair (by address, as Uniswap requires). Price inputs are always expressed
+  // as sorted1/sorted0 regardless of which token the user puts in the t0/t1 dropdowns.
+  const sorted0 = t0 && t1
+    ? (t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1)
+    : t0 ?? null;
+  const sorted1 = t0 && t1
+    ? (t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0)
+    : t1 ?? null;
+
   const tickSpacing =
     protocol === "aerodrome"
       ? selectedSpacing
       : UNISWAP_FEE_OPTIONS.find((o) => o.fee === selectedFee)?.tickSpacing ?? 200;
 
-  // Computed sqrtPriceX96 preview
+  // Computed sqrtPriceX96 preview — prices are always in sorted1/sorted0 terms
   const sqrtPricePreview = (() => {
-    if (!t0 || !t1) return "";
+    if (!sorted0 || !sorted1) return "";
     const p = parseFloat(startingPrice);
     if (!p || p <= 0) return "";
     try {
-      return priceToSqrtPriceX96(p, t0.decimals, t1.decimals).toString();
+      return priceToSqrtPriceX96(p, sorted0.decimals, sorted1.decimals).toString();
     } catch {
       return "";
     }
   })();
 
   const minTickPreview = (() => {
-    if (!t0 || !t1) return "";
+    if (!sorted0 || !sorted1) return "";
     const p = parseFloat(minPrice);
     if (!p || p <= 0) return "";
-    const raw = priceToTick(p, t0.decimals, t1.decimals);
+    const raw = priceToTick(p, sorted0.decimals, sorted1.decimals);
     return snapTick(raw, tickSpacing, true).toString();
   })();
 
   const maxTickPreview = (() => {
-    if (!t0 || !t1) return "";
+    if (!sorted0 || !sorted1) return "";
     const p = parseFloat(maxPrice);
     if (!p || p <= 0) return "";
-    const raw = priceToTick(p, t0.decimals, t1.decimals);
+    const raw = priceToTick(p, sorted0.decimals, sorted1.decimals);
     return snapTick(raw, tickSpacing, false).toString();
   })();
 
@@ -397,15 +349,29 @@ export default function LpManager() {
       const results: WalletToken[] = [];
       await Promise.all(
         all.map(async (t) => {
+          const isSeed = seed.some((s) => s.address.toLowerCase() === t.address.toLowerCase());
           try {
             const contract = new ethers.Contract(t.address, ERC20_ABI, provider);
             const bal: bigint = await contract.balanceOf(connectedAddress);
-            if (bal > 0n) {
+            // Always include seed tokens (even with 0 balance); custom tokens require balance > 0
+            if (isSeed || bal > 0n) {
               results.push({ ...t, balance: ethers.formatUnits(bal, t.decimals) });
             }
-          } catch { /* skip invalid/non-ERC20 */ }
+          } catch {
+            // For seed tokens, still include them even if balance check fails
+            if (isSeed) results.push({ ...t, balance: "0" });
+          }
         })
       );
+      // Keep seed tokens in their defined order, custom tokens appended after
+      results.sort((a, b) => {
+        const ai = seed.findIndex((s) => s.address.toLowerCase() === a.address.toLowerCase());
+        const bi = seed.findIndex((s) => s.address.toLowerCase() === b.address.toLowerCase());
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return 0;
+      });
       setWalletTokens(results);
       // Auto-select only on initial load (addresses are empty) — never override
       // a user selection on a balance refresh, as that would clear the success message.
@@ -475,31 +441,19 @@ export default function LpManager() {
       if (!t0 || !t1) throw new Error("Token info not loaded. Select both tokens.");
 
       // Sort tokens by address (Uniswap requires token0 < token1)
-      const sorted0 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1;
-      const sorted1 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0;
-      const wasSwapped = sorted0.address.toLowerCase() !== t0.address.toLowerCase();
+      const localSorted0 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1;
+      const localSorted1 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0;
+      const wasSwapped = localSorted0.address.toLowerCase() !== t0.address.toLowerCase();
 
-      // Recalculate prices/ticks using sorted order
+      // Prices are always entered as sorted1/sorted0 (e.g. USDC per HLRR) — no inversion.
       const humanPrice = parseFloat(startingPrice);
       const humanMin = parseFloat(minPrice);
       const humanMax = parseFloat(maxPrice);
 
-      const sqrtPrice = priceToSqrtPriceX96(
-        wasSwapped ? 1 / humanPrice : humanPrice,
-        sorted0.decimals,
-        sorted1.decimals
-      );
+      const sqrtPrice = priceToSqrtPriceX96(humanPrice, localSorted0.decimals, localSorted1.decimals);
 
-      const rawTickLower = priceToTick(
-        wasSwapped ? 1 / humanMax : humanMin,
-        sorted0.decimals,
-        sorted1.decimals
-      );
-      const rawTickUpper = priceToTick(
-        wasSwapped ? 1 / humanMin : humanMax,
-        sorted0.decimals,
-        sorted1.decimals
-      );
+      const rawTickLower = priceToTick(humanMin, localSorted0.decimals, localSorted1.decimals);
+      const rawTickUpper = priceToTick(humanMax, localSorted0.decimals, localSorted1.decimals);
 
       const tickLower = snapTick(rawTickLower, tickSpacing, true);
       const tickUpper = snapTick(rawTickUpper, tickSpacing, false);
@@ -511,11 +465,11 @@ export default function LpManager() {
 
       const amt0Raw = ethers.parseUnits(
         wasSwapped ? amount1 : amount0,
-        sorted0.decimals
+        localSorted0.decimals
       );
       const amt1Raw = ethers.parseUnits(
         wasSwapped ? amount0 : amount1,
-        sorted1.decimals
+        localSorted1.decimals
       );
 
       const nfpmAddress =
@@ -523,21 +477,26 @@ export default function LpManager() {
           ? UNISWAP_ADDRESSES[chainId].nfpm
           : AERODROME_ADDRESSES.nfpm;
 
+      // Approve 2% above desired to cover Uniswap's internal rounding — avoids STF
+      // errors while keeping a specific cap (no "unlimited" MetaMask warning).
+      const approval0 = amt0Raw * 102n / 100n;
+      const approval1 = amt1Raw * 102n / 100n;
+
       // Step 1: Approve token0
       setTxStatus({ type: "approving_token0" });
-      const erc0 = new ethers.Contract(sorted0.address, ERC20_ABI, signer);
+      const erc0 = new ethers.Contract(localSorted0.address, ERC20_ABI, signer);
       const allowance0: bigint = await erc0.allowance(connectedAddress, nfpmAddress);
       if (allowance0 < amt0Raw) {
-        const tx = await erc0.approve(nfpmAddress, ethers.MaxUint256);
+        const tx = await erc0.approve(nfpmAddress, approval0);
         await tx.wait(2);
       }
 
       // Step 2: Approve token1
       setTxStatus({ type: "approving_token1" });
-      const erc1 = new ethers.Contract(sorted1.address, ERC20_ABI, signer);
+      const erc1 = new ethers.Contract(localSorted1.address, ERC20_ABI, signer);
       const allowance1: bigint = await erc1.allowance(connectedAddress, nfpmAddress);
       if (allowance1 < amt1Raw) {
-        const tx = await erc1.approve(nfpmAddress, ethers.MaxUint256);
+        const tx = await erc1.approve(nfpmAddress, approval1);
         await tx.wait(2);
       }
 
@@ -552,16 +511,16 @@ export default function LpManager() {
         const iface = new ethers.Interface(NFPM_UNISWAP_ABI);
 
         const initCalldata = iface.encodeFunctionData("createAndInitializePoolIfNecessary", [
-          sorted0.address,
-          sorted1.address,
+          localSorted0.address,
+          localSorted1.address,
           selectedFee,
           sqrtPrice,
         ]);
 
         const mintCalldata = iface.encodeFunctionData("mint", [
           {
-            token0: sorted0.address,
-            token1: sorted1.address,
+            token0: localSorted0.address,
+            token1: localSorted1.address,
             fee: selectedFee,
             tickLower,
             tickUpper,
@@ -582,8 +541,8 @@ export default function LpManager() {
         setTxStatus({ type: "minting" });
         const nfpm = new ethers.Contract(nfpmAddress, NFPM_AERODROME_ABI, signer);
         const tx = await nfpm.mint({
-          token0: sorted0.address,
-          token1: sorted1.address,
+          token0: localSorted0.address,
+          token1: localSorted1.address,
           tickSpacing,
           tickLower,
           tickUpper,
@@ -1198,7 +1157,7 @@ export default function LpManager() {
         <div style={S.card}>
           <p style={S.sectionTitle}>Starting Price</p>
           <label style={S.label}>
-            {t1?.symbol ?? "Token1"} per {t0?.symbol ?? "Token0"}
+            {sorted1?.symbol ?? "Token1"} per {sorted0?.symbol ?? "Token0"}
           </label>
           <input
             type="number"
@@ -1220,7 +1179,7 @@ export default function LpManager() {
           <div style={S.row}>
             <div>
               <label style={S.label}>
-                Min Price ({t1?.symbol ?? "T1"}/{t0?.symbol ?? "T0"})
+                Min Price ({sorted1?.symbol ?? "T1"}/{sorted0?.symbol ?? "T0"})
               </label>
               <input
                 type="number"
@@ -1235,7 +1194,7 @@ export default function LpManager() {
             </div>
             <div>
               <label style={S.label}>
-                Max Price ({t1?.symbol ?? "T1"}/{t0?.symbol ?? "T0"})
+                Max Price ({sorted1?.symbol ?? "T1"}/{sorted0?.symbol ?? "T0"})
               </label>
               <input
                 type="number"
@@ -1470,10 +1429,10 @@ export default function LpManager() {
               disabled={!connectedAddress || !vaultAddress}
               style={{
                 padding: "0.35rem 0.85rem",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.15)",
+                background: "rgba(34,211,238,0.08)",
+                border: "1px solid rgba(34,211,238,0.35)",
                 borderRadius: 6,
-                color: "#9ca3af",
+                color: "var(--accent)",
                 fontSize: "0.8rem",
                 cursor: "pointer",
               }}
@@ -1535,7 +1494,7 @@ export default function LpManager() {
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "0.85rem", color: isUnlocked ? "#6ee7b7" : "#fbbf24" }}>
-                      {isUnlocked ? "🔓 Unlocked" : `🔒 ${countdownLabel}`}
+                      {isUnlocked ? "✅ Unlocked" : `🔒 ${countdownLabel}`}
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.2rem" }}>
                       {new Date(lock.unlockTime * 1000).toLocaleString()}
