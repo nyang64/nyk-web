@@ -92,6 +92,14 @@ const NFPM_UNISWAP_ABI = [
   "function mint((address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)",
 ];
 
+const UNISWAP_FACTORY_ABI = [
+  "function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool)",
+];
+
+const UNISWAP_POOL_ABI = [
+  "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, uint8, bool)",
+];
+
 const NFPM_AERODROME_ABI = [
   "function mint((address token0, address token1, int24 tickSpacing, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline, uint160 sqrtPriceX96)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)",
 ];
@@ -461,6 +469,36 @@ export default function LpManager() {
       if (tickLower >= tickUpper) {
         setTxStatus({ type: "error", message: "Min price must be less than Max price." });
         return;
+      }
+
+      // Pre-flight: if a pool already exists at this fee tier, verify its current
+      // price falls inside the user's tick range.  createAndInitializePoolIfNecessary
+      // is a no-op on an existing pool, so a wrong-priced pool would silently deposit
+      // only one token (no HLRR if price > tickUpper, no USDC if price < tickLower).
+      if (protocol === "uniswap") {
+        const provider2 = new ethers.BrowserProvider(ethereum);
+        const addrs = UNISWAP_ADDRESSES[chainId];
+        if (addrs) {
+          const factory = new ethers.Contract(addrs.factory, UNISWAP_FACTORY_ABI, provider2);
+          const existingPool: string = await factory.getPool(
+            localSorted0.address, localSorted1.address, selectedFee
+          );
+          if (existingPool !== ethers.ZeroAddress) {
+            const pool = new ethers.Contract(existingPool, UNISWAP_POOL_ABI, provider2);
+            const [, currentTick]: [bigint, number] = await pool.slot0();
+            if (currentTick < tickLower || currentTick >= tickUpper) {
+              const currentPrice = (1.0001 ** currentTick) * Math.pow(10, localSorted0.decimals - localSorted1.decimals);
+              setTxStatus({
+                type: "error",
+                message:
+                  `Pool already exists at tick ${currentTick} (≈$${currentPrice.toFixed(4)} ${localSorted1.symbol}/${localSorted0.symbol}), ` +
+                  `which is OUTSIDE your range [$${humanMin}–$${humanMax}]. ` +
+                  `Switch to a different fee tier (e.g. 1%) to create a fresh pool at the correct price.`,
+              });
+              return;
+            }
+          }
+        }
       }
 
       const amt0Raw = ethers.parseUnits(
