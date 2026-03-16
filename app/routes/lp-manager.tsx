@@ -477,8 +477,9 @@ export default function LpManager() {
           ? UNISWAP_ADDRESSES[chainId].nfpm
           : AERODROME_ADDRESSES.nfpm;
 
-      // Approve 2% above desired to cover Uniswap's internal rounding — avoids STF
-      // errors while keeping a specific cap (no "unlimited" MetaMask warning).
+      // Approve 2% above desired to cover Uniswap's internal rounding — avoids STF.
+      // Check against approval amount (not amt0Raw) so a stale exact-amount allowance
+      // from a previous attempt doesn't cause us to skip re-approval.
       const approval0 = amt0Raw * 102n / 100n;
       const approval1 = amt1Raw * 102n / 100n;
 
@@ -486,7 +487,7 @@ export default function LpManager() {
       setTxStatus({ type: "approving_token0" });
       const erc0 = new ethers.Contract(localSorted0.address, ERC20_ABI, signer);
       const allowance0: bigint = await erc0.allowance(connectedAddress, nfpmAddress);
-      if (allowance0 < amt0Raw) {
+      if (allowance0 < approval0) {
         const tx = await erc0.approve(nfpmAddress, approval0);
         await tx.wait(2);
       }
@@ -495,7 +496,7 @@ export default function LpManager() {
       setTxStatus({ type: "approving_token1" });
       const erc1 = new ethers.Contract(localSorted1.address, ERC20_ABI, signer);
       const allowance1: bigint = await erc1.allowance(connectedAddress, nfpmAddress);
-      if (allowance1 < amt1Raw) {
+      if (allowance1 < approval1) {
         const tx = await erc1.approve(nfpmAddress, approval1);
         await tx.wait(2);
       }
