@@ -122,6 +122,14 @@ const NFPM_APPROVE_ABI = [
   "function ownerOf(uint256 tokenId) external view returns (address)",
 ];
 
+// Used for closing a position: read liquidity, remove it, collect, burn
+const NFPM_CLOSE_ABI = [
+  "function positions(uint256 tokenId) external view returns (uint96 nonce, address operator, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)",
+  "function decreaseLiquidity((uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min, uint256 deadline) params) external payable returns (uint256 amount0, uint256 amount1)",
+  "function collect((uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max) params) external payable returns (uint256 amount0, uint256 amount1)",
+  "function burn(uint256 tokenId) external payable",
+];
+
 const LP_VAULT_ABI = [
   "function createLock(address manager, uint256 tokenId, uint256 unlockTime) external returns (uint256 lockIndex)",
   "function collectFees(address manager, uint256 lockIndex, address recipient) external",
@@ -151,6 +159,7 @@ type LockTxStatus =
   | { type: "locking" }
   | { type: "collecting"; lockIndex: number }
   | { type: "withdrawing"; lockIndex: number }
+  | { type: "closing"; lockIndex: number }
   | { type: "success"; message: string }
   | { type: "error"; message: string };
 
@@ -639,6 +648,8 @@ export default function LpManager() {
 
   useEffect(() => {
     fetchMyLocks();
+    const interval = setInterval(fetchMyLocks, 30_000);
+    return () => clearInterval(interval);
   }, [fetchMyLocks]);
 
   const handleLockNFT = async () => {
@@ -725,6 +736,64 @@ export default function LpManager() {
         setLockTxStatus({ type: "error", message: "Rejected by user." });
       } else {
         setLockTxStatus({ type: "error", message: e.reason ?? e.message ?? "Withdraw failed." });
+      }
+    }
+  };
+
+  const handleClosePosition = async (manager: string, lockIndex: number, tokenId: string) => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || !vaultAddress) return;
+    try {
+      setLockTxStatus({ type: "closing", lockIndex });
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+
+      // Step 1: withdraw NFT from vault back to wallet
+      const vault = new ethers.Contract(vaultAddress, LP_VAULT_ABI, signer);
+      const withdrawTx = await vault.withdrawNFT(manager, lockIndex);
+      await withdrawTx.wait();
+
+      // Step 2: read current liquidity
+      const nfpm = new ethers.Contract(manager, NFPM_CLOSE_ABI, signer);
+      const pos = await nfpm.positions(BigInt(tokenId));
+      const liquidity: bigint = pos.liquidity;
+
+      const deadline = Math.floor(Date.now() / 1000) + 1200;
+
+      // Step 3: remove all liquidity (if any)
+      if (liquidity > 0n) {
+        const decreaseTx = await nfpm.decreaseLiquidity({
+          tokenId: BigInt(tokenId),
+          liquidity,
+          amount0Min: 0n,
+          amount1Min: 0n,
+          deadline,
+        });
+        await decreaseTx.wait();
+      }
+
+      // Step 4: collect all tokens + fees
+      const MAX_U128 = 2n ** 128n - 1n;
+      const collectTx = await nfpm.collect({
+        tokenId: BigInt(tokenId),
+        recipient: connectedAddress,
+        amount0Max: MAX_U128,
+        amount1Max: MAX_U128,
+      });
+      await collectTx.wait();
+
+      // Step 5: burn the NFT
+      const burnTx = await nfpm.burn(BigInt(tokenId));
+      await burnTx.wait();
+
+      setLockTxStatus({ type: "success", message: `Position #${tokenId} closed. Tokens returned to your wallet.` });
+      await fetchMyLocks();
+    } catch (err: unknown) {
+      const e = err as { code?: number | string; reason?: string; message?: string };
+      if (e.code === 4001 || e.code === "ACTION_REJECTED") {
+        setLockTxStatus({ type: "error", message: "Rejected by user." });
+      } else {
+        setLockTxStatus({ type: "error", message: e.reason ?? e.message ?? "Close position failed." });
       }
     }
   };
@@ -1392,8 +1461,20 @@ export default function LpManager() {
             const secondsLeft = lock.unlockTime - now;
             const daysLeft = Math.floor(secondsLeft / 86400);
             const hoursLeft = Math.floor((secondsLeft % 86400) / 3600);
+            const minutesLeft = Math.floor((secondsLeft % 3600) / 60);
+            const countdownLabel = daysLeft > 0
+              ? `${daysLeft}d ${hoursLeft}h remaining`
+              : hoursLeft > 0
+              ? `${hoursLeft}h ${minutesLeft}m remaining`
+              : minutesLeft > 0
+              ? `${minutesLeft}m remaining`
+              : secondsLeft > 0
+              ? "< 1m remaining"
+              : "Unlocked";
             const isCollecting = lockTxStatus.type === "collecting" && lockTxStatus.lockIndex === lock.lockIndex;
             const isWithdrawing = lockTxStatus.type === "withdrawing" && lockTxStatus.lockIndex === lock.lockIndex;
+            const isClosing = lockTxStatus.type === "closing" && lockTxStatus.lockIndex === lock.lockIndex;
+            const isBusy = isCollecting || isWithdrawing || isClosing;
 
             return (
               <div
@@ -1415,7 +1496,7 @@ export default function LpManager() {
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "0.85rem", color: isUnlocked ? "#6ee7b7" : "#fbbf24" }}>
-                      {isUnlocked ? "🔓 Unlocked" : `🔒 ${daysLeft}d ${hoursLeft}h remaining`}
+                      {isUnlocked ? "🔓 Unlocked" : `🔒 ${countdownLabel}`}
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.2rem" }}>
                       {new Date(lock.unlockTime * 1000).toLocaleString()}
@@ -1427,7 +1508,7 @@ export default function LpManager() {
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                     <button
                       onClick={() => handleCollectFees(lock.manager, lock.lockIndex)}
-                      disabled={isCollecting || isWithdrawing}
+                      disabled={isBusy}
                       style={{
                         flex: 1,
                         padding: "0.5rem 0.75rem",
@@ -1436,7 +1517,7 @@ export default function LpManager() {
                         borderRadius: 6,
                         color: "#67e8f9",
                         fontSize: "0.85rem",
-                        cursor: "pointer",
+                        cursor: isBusy ? "not-allowed" : "pointer",
                         fontWeight: 500,
                       }}
                     >
@@ -1444,7 +1525,7 @@ export default function LpManager() {
                     </button>
                     <button
                       onClick={() => handleWithdrawNFT(lock.manager, lock.lockIndex)}
-                      disabled={!isUnlocked || isCollecting || isWithdrawing}
+                      disabled={!isUnlocked || isBusy}
                       title={!isUnlocked ? "Still locked" : "Withdraw NFT to your wallet"}
                       style={{
                         flex: 1,
@@ -1454,12 +1535,32 @@ export default function LpManager() {
                         borderRadius: 6,
                         color: isUnlocked ? "#c4b5fd" : "#4b5563",
                         fontSize: "0.85rem",
-                        cursor: isUnlocked ? "pointer" : "not-allowed",
+                        cursor: isUnlocked && !isBusy ? "pointer" : "not-allowed",
                         fontWeight: 500,
                       }}
                     >
                       {isWithdrawing ? "Withdrawing…" : "Withdraw NFT"}
                     </button>
+                    {isUnlocked && (
+                      <button
+                        onClick={() => handleClosePosition(lock.manager, lock.lockIndex, lock.tokenId)}
+                        disabled={isBusy}
+                        title="Remove all liquidity, collect tokens, and burn the NFT"
+                        style={{
+                          flex: 1,
+                          padding: "0.5rem 0.75rem",
+                          background: isBusy ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.12)",
+                          border: `1px solid ${isBusy ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.4)"}`,
+                          borderRadius: 6,
+                          color: isBusy ? "#4b5563" : "#fca5a5",
+                          fontSize: "0.85rem",
+                          cursor: isBusy ? "not-allowed" : "pointer",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {isClosing ? "Closing…" : "Close Position"}
+                      </button>
+                    )}
                   </div>
                 )}
 
