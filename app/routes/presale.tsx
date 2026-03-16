@@ -12,6 +12,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+// ─── Kill switch ──────────────────────────────────────────────────────────────
+// Set to false to disable the presale UI globally (works even for cached pages
+// because this flag is evaluated at runtime from the deployed bundle).
+const PRESALE_ENABLED = false;
+
 // Presale configuration
 const HLRR_PRICE_USD = 0.075; // $0.075 per HLRR
 
@@ -486,6 +491,19 @@ export default function Presale() {
   const maxInCurrency = paymentCurrency === 'USDC'
     ? PRESALE_CONFIG.maxContributionUsd.toLocaleString()
     : (ethPriceUsd ? (PRESALE_CONFIG.maxContributionUsd / ethPriceUsd).toFixed(4) : '...');
+
+  if (!PRESALE_ENABLED) {
+    return (
+      <main>
+        <div className="card" style={{ textAlign: "center", padding: "3rem 2rem" }}>
+          <h2>Hashed Lierre (HLRR) Presale</h2>
+          <p style={{ color: "var(--muted)", marginTop: "1rem" }}>
+            The presale is currently closed. Please check back later.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
