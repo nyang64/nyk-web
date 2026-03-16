@@ -1339,6 +1339,10 @@ export default function LpManager() {
             >
               View on BaseScan →
             </a>
+            <br />
+            <span style={{ fontSize: "0.78rem", color: "#6b7280", fontFamily: "monospace", wordBreak: "break-all" }}>
+              Tx: {txStatus.txHash}
+            </span>
           </div>
         )}
 
