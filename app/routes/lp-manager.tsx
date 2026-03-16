@@ -407,15 +407,10 @@ export default function LpManager() {
         })
       );
       setWalletTokens(results);
-      // Keep or auto-select token addresses
-      setToken0Addr((prev) =>
-        results.some((t) => t.address.toLowerCase() === prev.toLowerCase())
-          ? prev : (results[0]?.address ?? "")
-      );
-      setToken1Addr((prev) =>
-        results.some((t) => t.address.toLowerCase() === prev.toLowerCase())
-          ? prev : (results[1]?.address ?? "")
-      );
+      // Auto-select only on initial load (addresses are empty) — never override
+      // a user selection on a balance refresh, as that would clear the success message.
+      setToken0Addr((prev) => prev || (results[0]?.address ?? ""));
+      setToken1Addr((prev) => prev || (results[1]?.address ?? ""));
     } catch { /* silent */ }
   }, [connectedAddress, chainId, customTokens, getEthereum]);
 
