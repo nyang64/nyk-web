@@ -112,6 +112,7 @@ const NFPM_APPROVE_ABI = [
 // Used for closing a position: read liquidity, remove it, collect, burn
 const NFPM_CLOSE_ABI = [
   "function positions(uint256 tokenId) external view returns (uint96 nonce, address operator, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)",
+  "function multicall(bytes[] calldata data) external payable returns (bytes[] memory results)",
   "function decreaseLiquidity((uint256 tokenId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min, uint256 deadline) params) external payable returns (uint256 amount0, uint256 amount1)",
   "function collect((uint256 tokenId, address recipient, uint128 amount0Max, uint128 amount1Max) params) external payable returns (uint256 amount0, uint256 amount1)",
   "function burn(uint256 tokenId) external payable",
@@ -770,30 +771,33 @@ export default function LpManager() {
       const liquidity: bigint = pos.liquidity;
 
       const deadline = Math.floor(Date.now() / 1000) + 1200;
+      const MAX_U128 = 2n ** 128n - 1n;
+      const iface = new ethers.Interface(NFPM_CLOSE_ABI);
 
-      // Step 3: remove all liquidity (if any)
+      // Steps 3+4: decreaseLiquidity + collect in one multicall (single MetaMask
+      // confirmation, atomic — same pattern as Uniswap's own UI).
+      // Always include collect so any pre-existing tokensOwed (accrued fees) are
+      // also swept to the wallet even if liquidity is already 0.
+      const calls: string[] = [];
       if (liquidity > 0n) {
-        const decreaseTx = await nfpm.decreaseLiquidity({
+        calls.push(iface.encodeFunctionData("decreaseLiquidity", [{
           tokenId: BigInt(tokenId),
           liquidity,
           amount0Min: 0n,
           amount1Min: 0n,
           deadline,
-        });
-        await decreaseTx.wait();
+        }]));
       }
-
-      // Step 4: collect all tokens + fees
-      const MAX_U128 = 2n ** 128n - 1n;
-      const collectTx = await nfpm.collect({
+      calls.push(iface.encodeFunctionData("collect", [{
         tokenId: BigInt(tokenId),
         recipient: connectedAddress,
         amount0Max: MAX_U128,
         amount1Max: MAX_U128,
-      });
-      await collectTx.wait();
+      }]));
+      const multicallTx = await nfpm.multicall(calls);
+      await multicallTx.wait();
 
-      // Step 5: burn the NFT
+      // Step 5: burn the NFT (only succeeds when liquidity=0 and tokensOwed=0)
       const burnTx = await nfpm.burn(BigInt(tokenId));
       await burnTx.wait();
 
