@@ -21,6 +21,56 @@ export function meta({}: Route.MetaArgs) {
 const CHAIN = {
   BASE_MAINNET: 8453,
   BASE_SEPOLIA: 84532,
+  ARBITRUM:     42161,
+  OPTIMISM:     10,
+  POLYGON:      137,
+  BNB:          56,
+};
+
+// Chain metadata used for wallet_addEthereumChain (EIP-3085) when a chain is
+// not yet configured in the wallet (error code 4902).
+const CHAIN_META: Record<number, {
+  chainName: string;
+  rpcUrls: string[];
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  blockExplorerUrls: string[];
+}> = {
+  [CHAIN.BASE_MAINNET]: {
+    chainName: "Base",
+    rpcUrls: ["https://mainnet.base.org"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://basescan.org"],
+  },
+  [CHAIN.BASE_SEPOLIA]: {
+    chainName: "Base Sepolia",
+    rpcUrls: ["https://sepolia.base.org"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://sepolia.basescan.org"],
+  },
+  [CHAIN.ARBITRUM]: {
+    chainName: "Arbitrum One",
+    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://arbiscan.io"],
+  },
+  [CHAIN.OPTIMISM]: {
+    chainName: "OP Mainnet",
+    rpcUrls: ["https://mainnet.optimism.io"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://optimistic.etherscan.io"],
+  },
+  [CHAIN.POLYGON]: {
+    chainName: "Polygon",
+    rpcUrls: ["https://polygon-rpc.com"],
+    nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+    blockExplorerUrls: ["https://polygonscan.com"],
+  },
+  [CHAIN.BNB]: {
+    chainName: "BNB Smart Chain",
+    rpcUrls: ["https://bsc-dataseed.binance.org"],
+    nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+    blockExplorerUrls: ["https://bscscan.com"],
+  },
 };
 
 const UNISWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
@@ -32,11 +82,71 @@ const UNISWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
     factory: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
     nfpm: "0x27F971cb582BF9E50F397e4d29a5C7A34f11faA2",
   },
+  [CHAIN.ARBITRUM]: {
+    factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+    nfpm: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+  },
+  [CHAIN.OPTIMISM]: {
+    factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+    nfpm: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+  },
+  [CHAIN.POLYGON]: {
+    factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+    nfpm: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+  },
+  [CHAIN.BNB]: {
+    factory: "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7",
+    nfpm: "0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613",
+  },
 };
 
-const AERODROME_ADDRESSES = {
-  clFactory: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
-  nfpm: "0x827922686190790b37229fd06084350E74485b72",
+// Slipstream (Aerodrome / Velodrome) addresses keyed by chainId.
+// Both protocols share the same contract interface — only addresses differ.
+const SLIPSTREAM_ADDRESSES: Partial<Record<number, { clFactory: string; nfpm: string }>> = {
+  [CHAIN.BASE_MAINNET]: {
+    clFactory: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
+    nfpm: "0x827922686190790b37229fd06084350E74485b72",
+  },
+  [CHAIN.OPTIMISM]: {
+    clFactory: "0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F",
+    nfpm: "0x416b433906b1B72FA758e166e239c43d68dC6F29",
+  },
+};
+
+// Sentinel address used to represent the native coin in the token list.
+// Balance is fetched via eth_getBalance; pool operations substitute WETH_BY_CHAIN.
+const NATIVE_ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+
+// Native coin symbol per chain (used for display in KNOWN_TOKENS seed list)
+const NATIVE_SYMBOL: Partial<Record<number, string>> = {
+  [CHAIN.POLYGON]: "POL",
+  [CHAIN.BNB]:     "BNB",
+};
+
+const WETH_BY_CHAIN: Partial<Record<number, string>> = {
+  [CHAIN.BASE_MAINNET]: "0x4200000000000000000000000000000000000006",
+  [CHAIN.BASE_SEPOLIA]: "0x4200000000000000000000000000000000000006",
+  [CHAIN.ARBITRUM]:     "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  [CHAIN.OPTIMISM]:     "0x4200000000000000000000000000000000000006",
+  [CHAIN.POLYGON]:      "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WPOL
+  [CHAIN.BNB]:          "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
+};
+
+// PancakeSwap V3 uses the same factory + NFPM address across all supported chains
+const PANCAKESWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
+  [CHAIN.BASE_MAINNET]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+  },
+  [CHAIN.ARBITRUM]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+  },
+  // PancakeSwap V3 is not deployed on Optimism or Polygon
+  [CHAIN.BNB]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+  },
 };
 
 interface WalletToken {
@@ -51,14 +161,128 @@ const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
   [CHAIN.BASE_MAINNET]: [
     { address: "0x5E1583d48bcFd60de77138ea195f3EFbe128405d", symbol: "HLRR", decimals: 8 },
     { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6 },
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
     { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
   ],
   [CHAIN.BASE_SEPOLIA]: [
     { address: "0x75f9A6289B40BA7b32C4D56300a53B208dD8E7F4", symbol: "HLRR", decimals: 8 },
-    { address: "0x90BD93418b87A9690F79B7449c1aECe018Fb4376", symbol: "USDC", decimals: 6 },
+    { address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC", decimals: 6 },
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
     { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
   ],
+  [CHAIN.ARBITRUM]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", symbol: "WETH", decimals: 18 },
+    { address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", symbol: "USDC", decimals: 6 },
+    { address: "0x912CE59144191C1204E64559FE8253a0e49E6548", symbol: "ARB", decimals: 18 },
+  ],
+  [CHAIN.OPTIMISM]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
+    { address: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", symbol: "USDC", decimals: 6 },
+    { address: "0x4200000000000000000000000000000000000042", symbol: "OP", decimals: 18 },
+  ],
+  [CHAIN.POLYGON]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "POL", decimals: 18 },
+    { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", symbol: "WPOL", decimals: 18 },
+    { address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", symbol: "USDC", decimals: 6 },
+    { address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", symbol: "WETH", decimals: 18 },
+  ],
+  [CHAIN.BNB]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "BNB", decimals: 18 },
+    { address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", symbol: "WBNB", decimals: 18 },
+    { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 },
+    { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
+    { address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", symbol: "CAKE", decimals: 18 },
+  ],
 };
+
+// ─── Token discovery helpers ──────────────────────────────────────────────────
+
+// Basescan/Arbiscan tokenlist API — covers full history in one call.
+const EXPLORER_API: Partial<Record<number, string>> = {
+  [CHAIN.BASE_MAINNET]: "https://api.basescan.org/api",
+  [CHAIN.BASE_SEPOLIA]: "https://api-sepolia.basescan.org/api",
+  [CHAIN.ARBITRUM]:     "https://api.arbiscan.io/api",
+  [CHAIN.OPTIMISM]:     "https://api-optimistic.etherscan.io/api",
+  [CHAIN.POLYGON]:      "https://api.polygonscan.com/api",
+  [CHAIN.BNB]:          "https://api.bscscan.com/api",
+};
+
+async function fetchExplorerTokens(
+  chainId: number,
+  walletAddress: string
+): Promise<Omit<WalletToken, "balance">[]> {
+  const base = EXPLORER_API[chainId];
+  if (!base) return [];
+  try {
+    const url = `${base}?module=account&action=tokenlist&address=${walletAddress}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (json.status !== "1" || !Array.isArray(json.result)) return [];
+    return (json.result as { contractAddress: string; tokenSymbol: string; tokenDecimal: string }[])
+      .map((t) => ({
+        address: t.contractAddress,
+        symbol: t.tokenSymbol,
+        decimals: parseInt(t.tokenDecimal, 10),
+      }))
+      .filter((t) => !isNaN(t.decimals));
+  } catch {
+    return [];
+  }
+}
+
+// ERC-20 Transfer event topic0
+const ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+/**
+ * Discover ERC-20 tokens in a wallet by scanning Transfer-event logs.
+ *
+ * Most public RPCs (including wallet-embedded ones) reject eth_getLogs when
+ * the block range is too large or there is no address filter. We work around
+ * this by scanning backwards in CHUNK_SIZE-block windows and running several
+ * chunks in parallel. The first batch that succeeds gives us the recent tokens;
+ * older tokens would require the user to add them manually.
+ *
+ * CHUNK_SIZE=2000 is accepted by virtually all public Base/Arbitrum RPCs.
+ * TOTAL_CHUNKS × CHUNK_SIZE = 200,000 blocks ≈ 4.6 days on Base (2 s/block).
+ */
+const LOG_CHUNK_SIZE = 2_000;
+const LOG_TOTAL_CHUNKS = 100; // 200 000 blocks ≈ 4–5 days on Base Sepolia
+
+async function discoverTokenAddressesFromLogs(
+  provider: ethers.BrowserProvider,
+  walletAddress: string
+): Promise<string[]> {
+  try {
+    const latest = await provider.getBlockNumber();
+    const paddedAddr = ethers.zeroPadValue(walletAddress, 32);
+    const found = new Set<string>();
+
+    // Run chunks in parallel batches of 10 to avoid overwhelming the RPC.
+    const BATCH = 10;
+    for (let batch = 0; batch < Math.ceil(LOG_TOTAL_CHUNKS / BATCH); batch++) {
+      const chunkPromises: Promise<void>[] = [];
+      for (let c = batch * BATCH; c < Math.min((batch + 1) * BATCH, LOG_TOTAL_CHUNKS); c++) {
+        const toBlock = latest - c * LOG_CHUNK_SIZE;
+        if (toBlock < 0) break;
+        const fromBlock = Math.max(0, toBlock - LOG_CHUNK_SIZE + 1);
+        chunkPromises.push(
+          provider
+            .getLogs({ fromBlock, toBlock, topics: [ERC20_TRANSFER_TOPIC, null, paddedAddr] })
+            .then((logs) => logs.forEach((l) => found.add(l.address.toLowerCase())))
+            .catch(() => { /* RPC rejected this range — skip */ })
+        );
+      }
+      await Promise.all(chunkPromises);
+    }
+
+    return [...found];
+  } catch {
+    return [];
+  }
+}
 
 // ─── Fee tier / tick spacing mappings ────────────────────────────────────────
 
@@ -66,6 +290,14 @@ const UNISWAP_FEE_OPTIONS: { label: string; fee: number; tickSpacing: number }[]
   { label: "0.01%", fee: 100, tickSpacing: 1 },
   { label: "0.05%", fee: 500, tickSpacing: 10 },
   { label: "0.3%", fee: 3000, tickSpacing: 60 },
+  { label: "1%", fee: 10000, tickSpacing: 200 },
+];
+
+// PancakeSwap V3 replaces the 0.3% tier with 0.25% (fee=2500, spacing=50)
+const PANCAKESWAP_FEE_OPTIONS: { label: string; fee: number; tickSpacing: number }[] = [
+  { label: "0.01%", fee: 100, tickSpacing: 1 },
+  { label: "0.05%", fee: 500, tickSpacing: 10 },
+  { label: "0.25%", fee: 2500, tickSpacing: 50 },
   { label: "1%", fee: 10000, tickSpacing: 200 },
 ];
 
@@ -90,6 +322,7 @@ const NFPM_UNISWAP_ABI = [
   "function multicall(bytes[] calldata data) external payable returns (bytes[] memory results)",
   "function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96) external payable returns (address pool)",
   "function mint((address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)",
+  "function refundETH() external payable",
 ];
 
 const UNISWAP_FACTORY_ABI = [
@@ -129,8 +362,12 @@ const LP_VAULT_ABI = [
 
 // Known vault deployments (LPVault contract)
 const VAULT_ADDRESSES: Partial<Record<number, string>> = {
-  [84532]: "0x35b27228E96159E6c0A7921faC733C6aE06b86d1", // Base Sepolia (LPVault.sol)
-  [8453]:  "0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805", // Base Mainnet (LPVault.sol)
+  [CHAIN.BASE_SEPOLIA]: "0x35b27228E96159E6c0A7921faC733C6aE06b86d1",
+  [CHAIN.BASE_MAINNET]: "0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805",
+  [CHAIN.ARBITRUM]:     "0x1B0c30f168D6Ef5F8203C915D191280e8Fe039Fa",
+  [CHAIN.BNB]:          "0x27e99baA94E143E17A4Ec09334639329eEA901bb",
+  [CHAIN.POLYGON]:      "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4",
+  [CHAIN.OPTIMISM]:     "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4",
 };
 
 interface LockInfo {
@@ -154,7 +391,10 @@ type LockTxStatus =
 // ─── Math helpers (imported from shared utility) ──────────────────────────────
 import { priceToSqrtPriceX96, priceToTick, snapTick } from "../utils/lpMath";
 
-type Protocol = "uniswap" | "aerodrome";
+type Protocol = "uniswap" | "aerodrome" | "velodrome" | "pancakeswap";
+
+/** True for protocols that use the Slipstream (Aerodrome/Velodrome) interface. */
+const isSlipstream = (p: Protocol) => p === "aerodrome" || p === "velodrome";
 
 type TxStatus =
   | { type: "idle" }
@@ -180,6 +420,7 @@ export default function LpManager() {
     connectWithProvider: walletConnectWithProvider,
     connectWallet: walletConnect,
     switchAccount: walletSwitchAccount,
+    switchNetwork: walletSwitchNetwork,
     disconnectWallet: walletDisconnect,
   } = useWallet();
 
@@ -197,9 +438,39 @@ export default function LpManager() {
 
   // Wallet tokens (fetched dynamically, filtered to balance > 0)
   const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
-  const [customTokens, setCustomTokens] = useState<Omit<WalletToken, "balance">[]>([]);
   const [customTokenInput, setCustomTokenInput] = useState("");
   const [customTokenError, setCustomTokenError] = useState("");
+
+  // Custom tokens persisted to localStorage per chainId so they survive refresh.
+  const customStorageKey = chainId ? `lp_custom_tokens_${chainId}` : null;
+  const [customTokens, setCustomTokensState] = useState<Omit<WalletToken, "balance">[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(`lp_custom_tokens_${chainId}`);
+      return raw ? (JSON.parse(raw) as Omit<WalletToken, "balance">[]) : [];
+    } catch { return []; }
+  });
+  const setCustomTokens = useCallback(
+    (updater: ((prev: Omit<WalletToken, "balance">[]) => Omit<WalletToken, "balance">[])) => {
+      setCustomTokensState((prev) => {
+        const next = updater(prev);
+        if (customStorageKey) {
+          try { localStorage.setItem(customStorageKey, JSON.stringify(next)); } catch { /* quota */ }
+        }
+        return next;
+      });
+    },
+    [customStorageKey]
+  );
+
+  // Reload custom tokens from localStorage whenever chainId changes.
+  useEffect(() => {
+    if (!customStorageKey) return;
+    try {
+      const raw = localStorage.getItem(customStorageKey);
+      setCustomTokensState(raw ? (JSON.parse(raw) as Omit<WalletToken, "balance">[]) : []);
+    } catch { setCustomTokensState([]); }
+  }, [customStorageKey]);
 
   // Status
   const [txStatus, setTxStatus] = useState<TxStatus>({ type: "idle" });
@@ -216,16 +487,23 @@ export default function LpManager() {
   // ─── Derived values ──────────────────────────────────────────────────────────
 
   const networkName =
-    chainId === CHAIN.BASE_MAINNET
-      ? "Base Mainnet"
-      : chainId === CHAIN.BASE_SEPOLIA
-      ? "Base Sepolia"
-      : chainId !== null
-      ? "Unsupported Network"
-      : null;
+    chainId === CHAIN.BASE_MAINNET ? "Base Mainnet"
+    : chainId === CHAIN.BASE_SEPOLIA ? "Base Sepolia"
+    : chainId === CHAIN.ARBITRUM    ? "Arbitrum One"
+    : chainId === CHAIN.OPTIMISM    ? "OP Mainnet"
+    : chainId === CHAIN.POLYGON     ? "Polygon"
+    : chainId === CHAIN.BNB         ? "BNB Chain"
+    : chainId !== null              ? "Unsupported Network"
+    : null;
 
-  const isSupported = chainId === CHAIN.BASE_MAINNET || chainId === CHAIN.BASE_SEPOLIA;
-  const isAeroOnTestnet = protocol === "aerodrome" && chainId === CHAIN.BASE_SEPOLIA;
+  const isSupported = chainId !== null && chainId in UNISWAP_ADDRESSES;
+
+  // Slipstream protocols are only available on chains that have a SLIPSTREAM_ADDRESSES entry
+  const isSlipstreamUnsupported = isSlipstream(protocol) && !(chainId !== null && chainId in SLIPSTREAM_ADDRESSES);
+  // Keep alias for error message clarity
+  const isAeroUnsupported = isSlipstreamUnsupported;
+  // PancakeSwap V3 is not on Base Sepolia, Optimism, or Polygon
+  const isPCSUnsupported = protocol === "pancakeswap" && !(chainId !== null && chainId in PANCAKESWAP_ADDRESSES);
 
   const t0 = walletTokens.find((t) => t.address.toLowerCase() === token0Addr.toLowerCase());
   const t1 = walletTokens.find((t) => t.address.toLowerCase() === token1Addr.toLowerCase());
@@ -240,10 +518,12 @@ export default function LpManager() {
     ? (t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0)
     : t1 ?? null;
 
+  const feeOptions = protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS;
+
   const tickSpacing =
-    protocol === "aerodrome"
+    isSlipstream(protocol)
       ? selectedSpacing
-      : UNISWAP_FEE_OPTIONS.find((o) => o.fee === selectedFee)?.tickSpacing ?? 200;
+      : feeOptions.find((o) => o.fee === selectedFee)?.tickSpacing ?? 200;
 
   // Computed sqrtPriceX96 preview — prices are always in sorted1/sorted0 terms
   const sqrtPricePreview = (() => {
@@ -276,20 +556,42 @@ export default function LpManager() {
   const basescanBase =
     chainId === CHAIN.BASE_MAINNET
       ? "https://basescan.org"
+      : chainId === CHAIN.ARBITRUM
+      ? "https://arbiscan.io"
       : "https://sepolia.basescan.org";
 
   // ─── Wallet setup ────────────────────────────────────────────────────────────
 
-  // Clear wallet tokens when wallet disconnects
+  // Clear wallet tokens on every address change — disconnect OR account switch.
+  // Without this, switching accounts inside the wallet leaves stale tokens visible
+  // until fetchWalletTokens completes for the new address.
   useEffect(() => {
-    if (!connectedAddress) { setWalletTokens([]); setToken0Addr(""); setToken1Addr(""); }
+    setWalletTokens([]);
+    setToken0Addr("");
+    setToken1Addr("");
   }, [connectedAddress]);
+
+  // Reset fee tier when switching protocols if the current fee doesn't exist in the new one
+  useEffect(() => {
+    const opts = protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS;
+    if (protocol !== "aerodrome" && !opts.find((o) => o.fee === selectedFee)) {
+      setSelectedFee(10000);
+    }
+  }, [protocol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear success status when any LP creation form field changes
   useEffect(() => {
     setTxStatus((s) => (s.type === "success" ? { type: "idle" } : s));
     setLockTxStatus((s) => (s.type === "success" || s.type === "error" ? { type: "idle" } : s));
   }, [protocol, token0Addr, token1Addr, selectedFee, selectedSpacing, startingPrice, minPrice, maxPrice, amount0, amount1]);
+
+  // Reset protocol to uniswap when switching to a chain where current protocol is unavailable
+  useEffect(() => {
+    if (!chainId) return;
+    if (protocol === "aerodrome" && chainId !== CHAIN.BASE_MAINNET) setProtocol("uniswap");
+    if (protocol === "velodrome" && chainId !== CHAIN.OPTIMISM) setProtocol("uniswap");
+    if (protocol === "pancakeswap" && !(chainId in PANCAKESWAP_ADDRESSES)) setProtocol("uniswap");
+  }, [chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-populate vault address and lock NFPM when chain / protocol changes
   useEffect(() => {
@@ -298,9 +600,11 @@ export default function LpManager() {
     }
     if (chainId && protocol) {
       const nfpmAddr =
-        protocol === "uniswap"
-          ? UNISWAP_ADDRESSES[chainId]?.nfpm ?? ""
-          : AERODROME_ADDRESSES.nfpm;
+        isSlipstream(protocol)
+          ? SLIPSTREAM_ADDRESSES[chainId]?.nfpm ?? ""
+          : protocol === "pancakeswap"
+          ? PANCAKESWAP_ADDRESSES[chainId]?.nfpm ?? ""
+          : UNISWAP_ADDRESSES[chainId]?.nfpm ?? "";
       setLockNfpm(nfpmAddr);
     }
   }, [chainId, protocol]);
@@ -346,29 +650,67 @@ export default function LpManager() {
     const ethereum = getEthereum();
     if (!ethereum || !connectedAddress || !chainId) return;
     const seed = KNOWN_TOKENS[chainId] ?? [];
-    // Merge seed + user-added custom tokens, deduplicated by address
-    const all = [
-      ...seed,
-      ...customTokens.filter(
-        (c) => !seed.some((s) => s.address.toLowerCase() === c.address.toLowerCase())
-      ),
-    ];
     try {
       const provider = new ethers.BrowserProvider(ethereum);
+
+      // Run Basescan API (full history) and recent eth_getLogs in parallel.
+      // Basescan covers months of history; logs catch very recently deployed
+      // contracts that Basescan hasn't indexed yet.
+      const [explorerTokens, logAddresses] = await Promise.all([
+        fetchExplorerTokens(chainId, connectedAddress),
+        discoverTokenAddressesFromLogs(provider, connectedAddress),
+      ]);
+
+      // Resolve symbol+decimals for log-discovered addresses not already covered
+      // by seed, explorer, or custom lists.
+      const knownAddrs = new Set([
+        ...seed.map((t) => t.address.toLowerCase()),
+        ...explorerTokens.map((t) => t.address.toLowerCase()),
+        ...customTokens.map((t) => t.address.toLowerCase()),
+      ]);
+      const logTokens: Omit<WalletToken, "balance">[] = await Promise.all(
+        logAddresses
+          .filter((a) => !knownAddrs.has(a))
+          .map(async (addr) => {
+            try {
+              const c = new ethers.Contract(addr, ERC20_ABI, provider);
+              const [sym, dec] = await Promise.all([c.symbol() as Promise<string>, c.decimals() as Promise<bigint>]);
+              return { address: addr, symbol: sym, decimals: Number(dec) };
+            } catch {
+              return null;
+            }
+          })
+      ).then((res) => res.filter(Boolean) as Omit<WalletToken, "balance">[]);
+
+      // Merge: seed → explorer → log-discovered → custom (dedup by address)
+      const seen = new Set<string>();
+      const all = [...seed, ...explorerTokens, ...logTokens, ...customTokens].filter((t) => {
+        const key = t.address.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       const results: WalletToken[] = [];
       await Promise.all(
         all.map(async (t) => {
           const isSeed = seed.some((s) => s.address.toLowerCase() === t.address.toLowerCase());
+          const isCustom = customTokens.some((c) => c.address.toLowerCase() === t.address.toLowerCase());
           try {
-            const contract = new ethers.Contract(t.address, ERC20_ABI, provider);
-            const bal: bigint = await contract.balanceOf(connectedAddress);
-            // Always include seed tokens (even with 0 balance); custom tokens require balance > 0
-            if (isSeed || bal > 0n) {
+            let bal: bigint;
+            if (t.address.toLowerCase() === NATIVE_ETH_ADDRESS.toLowerCase()) {
+              bal = await provider.getBalance(connectedAddress);
+            } else {
+              const contract = new ethers.Contract(t.address, ERC20_ABI, provider);
+              bal = await contract.balanceOf(connectedAddress);
+            }
+            // Seed and custom tokens always shown (even at 0 balance).
+            // Log-discovered tokens shown only if balance > 0.
+            if (isSeed || isCustom || bal > 0n) {
               results.push({ ...t, balance: ethers.formatUnits(bal, t.decimals) });
             }
           } catch {
-            // For seed tokens, still include them even if balance check fails
-            if (isSeed) results.push({ ...t, balance: "0" });
+            if (isSeed || isCustom) results.push({ ...t, balance: "0" });
           }
         })
       );
@@ -400,7 +742,11 @@ export default function LpManager() {
       setCustomTokenError("Invalid address.");
       return;
     }
-    if (walletTokens.some((t) => t.address.toLowerCase() === addr.toLowerCase())) {
+    const addrLower = addr.toLowerCase();
+    if (
+      customTokens.some((t) => t.address.toLowerCase() === addrLower) ||
+      KNOWN_TOKENS[chainId ?? 0]?.some((t) => t.address.toLowerCase() === addrLower)
+    ) {
       setCustomTokenError("Token already in list.");
       return;
     }
@@ -435,11 +781,15 @@ export default function LpManager() {
       return;
     }
     if (!isSupported) {
-      setTxStatus({ type: "error", message: "Unsupported network. Connect to Base Mainnet or Base Sepolia." });
+      setTxStatus({ type: "error", message: "Unsupported network. Switch to Base Mainnet, Arbitrum One, or Base Sepolia." });
       return;
     }
-    if (isAeroOnTestnet) {
-      setTxStatus({ type: "error", message: "Aerodrome Slipstream is only available on Base Mainnet." });
+    if (isAeroUnsupported) {
+      setTxStatus({ type: "error", message: "This protocol is not available on the current network. Switch networks or select a different protocol." });
+      return;
+    }
+    if (isPCSUnsupported) {
+      setTxStatus({ type: "error", message: "PancakeSwap V3 is not available on this network. Switch to Base Mainnet, Arbitrum One, or BNB Chain, or select Uniswap V3." });
       return;
     }
 
@@ -449,10 +799,29 @@ export default function LpManager() {
 
       if (!t0 || !t1) throw new Error("Token info not loaded. Select both tokens.");
 
-      // Sort tokens by address (Uniswap requires token0 < token1)
-      const localSorted0 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1;
-      const localSorted1 = t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0;
-      const wasSwapped = localSorted0.address.toLowerCase() !== t0.address.toLowerCase();
+      // Native ETH uses a sentinel address in the token list. For pool operations
+      // (sorting, pool init, mint params) we substitute the chain's WETH address.
+      // Native ETH is sent as msg.value — no ERC-20 approval needed.
+      const isNativeETH = (addr: string) => addr.toLowerCase() === NATIVE_ETH_ADDRESS.toLowerCase();
+      const hasNativeETH = isNativeETH(t0.address) || isNativeETH(t1.address);
+      if (hasNativeETH && isSlipstream(protocol)) {
+        setTxStatus({ type: "error", message: "Native ETH is not supported with Aerodrome Slipstream. Use WETH instead." });
+        return;
+      }
+      const wethAddr = WETH_BY_CHAIN[chainId];
+      if (hasNativeETH && !wethAddr) throw new Error("Native ETH is not supported on this network.");
+      const resolveAddr = (addr: string) => isNativeETH(addr) ? wethAddr! : addr;
+
+      // Sort by resolved (WETH) addresses — Uniswap requires token0 < token1
+      const r0 = resolveAddr(t0.address);
+      const r1 = resolveAddr(t1.address);
+      const swapped = r0.toLowerCase() > r1.toLowerCase();
+      const localSorted0 = { ...(swapped ? t1 : t0), address: swapped ? r1 : r0 };
+      const localSorted1 = { ...(swapped ? t0 : t1), address: swapped ? r0 : r1 };
+      const wasSwapped = swapped;
+      // Which sorted slot (if any) carries native ETH — determines msg.value and skips approval
+      const isNativeETHSorted0 = isNativeETH(swapped ? t1.address : t0.address);
+      const isNativeETHSorted1 = isNativeETH(swapped ? t0.address : t1.address);
 
       // Prices are always entered as sorted1/sorted0 (e.g. USDC per HLRR) — no inversion.
       const humanPrice = parseFloat(startingPrice);
@@ -476,9 +845,9 @@ export default function LpManager() {
       // price falls inside the user's tick range.  createAndInitializePoolIfNecessary
       // is a no-op on an existing pool, so a wrong-priced pool would silently deposit
       // only one token (no HLRR if price > tickUpper, no USDC if price < tickLower).
-      if (protocol === "uniswap") {
+      if (protocol === "uniswap" || protocol === "pancakeswap") {
         const provider2 = new ethers.BrowserProvider(ethereum);
-        const addrs = UNISWAP_ADDRESSES[chainId];
+        const addrs = protocol === "pancakeswap" ? PANCAKESWAP_ADDRESSES[chainId] : UNISWAP_ADDRESSES[chainId];
         if (addrs) {
           const factory = new ethers.Contract(addrs.factory, UNISWAP_FACTORY_ABI, provider2);
           const existingPool: string = await factory.getPool(
@@ -512,9 +881,11 @@ export default function LpManager() {
       );
 
       const nfpmAddress =
-        protocol === "uniswap"
-          ? UNISWAP_ADDRESSES[chainId].nfpm
-          : AERODROME_ADDRESSES.nfpm;
+        isSlipstream(protocol)
+          ? SLIPSTREAM_ADDRESSES[chainId]?.nfpm ?? ""
+          : protocol === "pancakeswap"
+          ? PANCAKESWAP_ADDRESSES[chainId]?.nfpm ?? ""
+          : UNISWAP_ADDRESSES[chainId]?.nfpm ?? "";
 
       // Approve 2% above desired to cover Uniswap's internal rounding — avoids STF.
       // Check against approval amount (not amt0Raw) so a stale exact-amount allowance
@@ -522,29 +893,33 @@ export default function LpManager() {
       const approval0 = amt0Raw * 102n / 100n;
       const approval1 = amt1Raw * 102n / 100n;
 
-      // Step 1: Approve token0
-      setTxStatus({ type: "approving_token0" });
-      const erc0 = new ethers.Contract(localSorted0.address, ERC20_ABI, signer);
-      const allowance0: bigint = await erc0.allowance(connectedAddress, nfpmAddress);
-      if (allowance0 < approval0) {
-        const tx = await erc0.approve(nfpmAddress, approval0);
-        await tx.wait(2);
+      // Step 1: Approve sorted0 (skip for native ETH — sent as msg.value)
+      if (!isNativeETHSorted0) {
+        setTxStatus({ type: "approving_token0" });
+        const erc0 = new ethers.Contract(localSorted0.address, ERC20_ABI, signer);
+        const allowance0: bigint = await erc0.allowance(connectedAddress, nfpmAddress);
+        if (allowance0 < approval0) {
+          const tx = await erc0.approve(nfpmAddress, approval0);
+          await tx.wait(2);
+        }
       }
 
-      // Step 2: Approve token1
-      setTxStatus({ type: "approving_token1" });
-      const erc1 = new ethers.Contract(localSorted1.address, ERC20_ABI, signer);
-      const allowance1: bigint = await erc1.allowance(connectedAddress, nfpmAddress);
-      if (allowance1 < approval1) {
-        const tx = await erc1.approve(nfpmAddress, approval1);
-        await tx.wait(2);
+      // Step 2: Approve sorted1 (skip for native ETH — sent as msg.value)
+      if (!isNativeETHSorted1) {
+        setTxStatus({ type: "approving_token1" });
+        const erc1 = new ethers.Contract(localSorted1.address, ERC20_ABI, signer);
+        const allowance1: bigint = await erc1.allowance(connectedAddress, nfpmAddress);
+        if (allowance1 < approval1) {
+          const tx = await erc1.approve(nfpmAddress, approval1);
+          await tx.wait(2);
+        }
       }
 
       const deadline = Math.floor(Date.now() / 1000) + 1200; // 20 min
 
       let receipt: ethers.TransactionReceipt | null = null;
 
-      if (protocol === "uniswap") {
+      if (protocol === "uniswap" || protocol === "pancakeswap") {
         setTxStatus({ type: "creating_pool" });
         const nfpm = new ethers.Contract(nfpmAddress, NFPM_UNISWAP_ABI, signer);
 
@@ -573,11 +948,16 @@ export default function LpManager() {
           },
         ]);
 
+        // Attach ETH value when one side is native ETH; refundETH returns any dust
+        const ethValue = isNativeETHSorted0 ? amt0Raw : isNativeETHSorted1 ? amt1Raw : 0n;
+        const calls = [initCalldata, mintCalldata];
+        if (ethValue > 0n) calls.push(iface.encodeFunctionData("refundETH", []));
+
         setTxStatus({ type: "minting" });
-        const tx = await nfpm.multicall([initCalldata, mintCalldata]);
+        const tx = await nfpm.multicall(calls, { value: ethValue });
         receipt = await tx.wait();
       } else {
-        // Aerodrome Slipstream
+        // Slipstream (Aerodrome on Base, Velodrome on Optimism) — identical interface
         setTxStatus({ type: "minting" });
         const nfpm = new ethers.Contract(nfpmAddress, NFPM_AERODROME_ABI, signer);
         const tx = await nfpm.mint({
@@ -818,7 +1198,8 @@ export default function LpManager() {
   const formValid =
     !!connectedAddress &&
     isSupported &&
-    !isAeroOnTestnet &&
+    !isAeroUnsupported &&
+    !isPCSUnsupported &&
     !!t0 && !!t1 &&
     !sameToken &&
     !!startingPrice &&
@@ -1007,11 +1388,13 @@ export default function LpManager() {
               <>
                 <span
                   style={S.badge(
-                    chainId === CHAIN.BASE_MAINNET
-                      ? "#22d3ee"
-                      : chainId === CHAIN.BASE_SEPOLIA
-                      ? "#a78bfa"
-                      : "#ef4444"
+                    chainId === CHAIN.BASE_MAINNET ? "#22d3ee"
+                    : chainId === CHAIN.BASE_SEPOLIA ? "#a78bfa"
+                    : chainId === CHAIN.ARBITRUM    ? "#f59e0b"
+                    : chainId === CHAIN.OPTIMISM    ? "#ff0420"
+                    : chainId === CHAIN.POLYGON     ? "#8247e5"
+                    : chainId === CHAIN.BNB         ? "#f0b90b"
+                    : "#ef4444"
                   )}
                 >
                   {networkName ?? "Unknown"}
@@ -1019,6 +1402,48 @@ export default function LpManager() {
                 <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
                   {connectedAddress.slice(0, 6)}...{connectedAddress.slice(-4)}
                 </span>
+                {/* Network switcher — Trust Wallet and similar wallets store a
+                    per-site chain that must be changed via wallet_switchEthereumChain;
+                    switching inside the wallet app alone won't update a site session. */}
+                <select
+                  value={chainId ?? ""}
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value);
+                    if (!id || id === chainId) return;
+                    walletSwitchNetwork(id).catch(async (err: unknown) => {
+                      // 4902 = chain not yet added to the wallet — add it then retry
+                      const code = (err as { code?: number })?.code;
+                      const meta = CHAIN_META[id];
+                      if (code === 4902 && meta) {
+                        try {
+                          const eth = getEthereum();
+                          if (!eth) return;
+                          await eth.request({
+                            method: "wallet_addEthereumChain",
+                            params: [{ chainId: `0x${id.toString(16)}`, ...meta }],
+                          });
+                        } catch { /* user rejected add */ }
+                      }
+                    });
+                  }}
+                  style={{
+                    ...S.select,
+                    width: "auto",
+                    padding: "0.2rem 0.5rem",
+                    fontSize: "0.78rem",
+                    marginBottom: 0,
+                  }}
+                >
+                  <option value={CHAIN.BASE_MAINNET}>Base Mainnet</option>
+                  <option value={CHAIN.ARBITRUM}>Arbitrum One</option>
+                  <option value={CHAIN.OPTIMISM}>OP Mainnet</option>
+                  <option value={CHAIN.POLYGON}>Polygon</option>
+                  <option value={CHAIN.BNB}>BNB Chain</option>
+                  <option value={CHAIN.BASE_SEPOLIA}>Base Sepolia</option>
+                  {chainId !== null && !(chainId in UNISWAP_ADDRESSES) && chainId !== CHAIN.BASE_SEPOLIA && (
+                    <option value={chainId}>Unknown ({chainId})</option>
+                  )}
+                </select>
               </>
             ) : (
               <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>No wallet connected</span>
@@ -1046,38 +1471,48 @@ export default function LpManager() {
         {/* Unsupported network warning */}
         {connectedAddress && !isSupported && (
           <div className="error-message" style={{ marginBottom: "1.25rem" }}>
-            Unsupported network. Please switch to Base Mainnet (8453) or Base Sepolia (84532).
+            <div>Unsupported network. Switch to a supported network:</div>
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
+              {[
+                { label: "Base Mainnet", id: CHAIN.BASE_MAINNET },
+                { label: "Arbitrum One", id: CHAIN.ARBITRUM },
+                { label: "Base Sepolia", id: CHAIN.BASE_SEPOLIA },
+              ].map(({ label, id }) => (
+                <button
+                  key={id}
+                  onClick={() => walletSwitchNetwork(id).catch(() => {})}
+                  style={{ ...S.btn, width: "auto", padding: "0.3rem 0.8rem", fontSize: "0.8rem", marginTop: 0 }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Aerodrome + Testnet warning */}
-        {isAeroOnTestnet && (
-          <div
-            style={{
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.4)",
-              borderRadius: 10,
-              padding: "0.9rem 1rem",
-              marginBottom: "1.25rem",
-              color: "#fbbf24",
-              fontSize: "0.9rem",
-            }}
-          >
-            <strong>Aerodrome Slipstream is not available on Base Sepolia.</strong> Switch to Base
-            Mainnet or select Uniswap V3 to continue.
-          </div>
-        )}
 
         {/* Protocol selector */}
         <div style={S.card}>
           <p style={S.sectionTitle}>Protocol</p>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <button style={S.protocolTab(protocol === "uniswap")} onClick={() => setProtocol("uniswap")}>
               Uniswap V3
             </button>
-            <button style={S.protocolTab(protocol === "aerodrome")} onClick={() => setProtocol("aerodrome")}>
-              Aerodrome Slipstream
-            </button>
+            {chainId !== null && chainId in PANCAKESWAP_ADDRESSES && (
+              <button style={S.protocolTab(protocol === "pancakeswap")} onClick={() => setProtocol("pancakeswap")}>
+                PancakeSwap V3
+              </button>
+            )}
+            {chainId === CHAIN.BASE_MAINNET && (
+              <button style={S.protocolTab(protocol === "aerodrome")} onClick={() => setProtocol("aerodrome")}>
+                Aerodrome
+              </button>
+            )}
+            {chainId === CHAIN.OPTIMISM && (
+              <button style={S.protocolTab(protocol === "velodrome")} onClick={() => setProtocol("velodrome")}>
+                Velodrome
+              </button>
+            )}
           </div>
         </div>
 
@@ -1100,11 +1535,15 @@ export default function LpManager() {
                 disabled={walletTokens.length === 0}
               >
                 {walletTokens.length === 0 && <option value="">— no tokens —</option>}
-                {walletTokens.map((t) => (
-                  <option key={t.address} value={t.address}>
-                    {t.symbol} ({parseFloat(t.balance).toFixed(4)})
-                  </option>
-                ))}
+                {walletTokens.map((t) => {
+                  const dupSymbol = walletTokens.filter((x) => x.symbol === t.symbol).length > 1;
+                  const addrTag = dupSymbol ? ` ${t.address.slice(0, 6)}…${t.address.slice(-4)}` : "";
+                  return (
+                    <option key={t.address} value={t.address}>
+                      {t.symbol}{addrTag} ({parseFloat(t.balance).toFixed(4)})
+                    </option>
+                  );
+                })}
               </select>
             </div>
             {/* Token1 */}
@@ -1117,11 +1556,15 @@ export default function LpManager() {
                 disabled={walletTokens.length === 0}
               >
                 {walletTokens.length === 0 && <option value="">— no tokens —</option>}
-                {walletTokens.map((t) => (
-                  <option key={t.address} value={t.address}>
-                    {t.symbol} ({parseFloat(t.balance).toFixed(4)})
-                  </option>
-                ))}
+                {walletTokens.map((t) => {
+                  const dupSymbol = walletTokens.filter((x) => x.symbol === t.symbol).length > 1;
+                  const addrTag = dupSymbol ? ` ${t.address.slice(0, 6)}…${t.address.slice(-4)}` : "";
+                  return (
+                    <option key={t.address} value={t.address}>
+                      {t.symbol}{addrTag} ({parseFloat(t.balance).toFixed(4)})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -1160,25 +1603,7 @@ export default function LpManager() {
 
         {/* Fee tier / tick spacing */}
         <div style={S.card}>
-          {protocol === "uniswap" ? (
-            <>
-              <p style={S.sectionTitle}>Fee Tier</p>
-              <div style={S.radioRow}>
-                {UNISWAP_FEE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.fee}
-                    style={S.radioBtn(selectedFee === opt.fee)}
-                    onClick={() => setSelectedFee(opt.fee)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <p style={{ ...S.hint, marginTop: "0.5rem" }}>
-                Tick spacing: {UNISWAP_FEE_OPTIONS.find((o) => o.fee === selectedFee)?.tickSpacing}
-              </p>
-            </>
-          ) : (
+          {isSlipstream(protocol) ? (
             <>
               <p style={S.sectionTitle}>Tick Spacing</p>
               <div style={S.radioRow}>
@@ -1192,6 +1617,24 @@ export default function LpManager() {
                   </button>
                 ))}
               </div>
+            </>
+          ) : (
+            <>
+              <p style={S.sectionTitle}>Fee Tier</p>
+              <div style={S.radioRow}>
+                {feeOptions.map((opt) => (
+                  <button
+                    key={opt.fee}
+                    style={S.radioBtn(selectedFee === opt.fee)}
+                    onClick={() => setSelectedFee(opt.fee)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p style={{ ...S.hint, marginTop: "0.5rem" }}>
+                Tick spacing: {feeOptions.find((o) => o.fee === selectedFee)?.tickSpacing}
+              </p>
             </>
           )}
         </div>
