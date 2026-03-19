@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Create concentrated liquidity positions on Uniswap V3 or Aerodrome Slipstream on the BASE network.",
+        "Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across Base, Arbitrum, Optimism, Polygon, and BNB Chain.",
     },
   ];
 }
@@ -1491,7 +1491,7 @@ export default function LpManager() {
             LP Position Creator
           </h1>
           <p style={{ color: "#9ca3af", marginTop: "0.4rem" }}>
-            Create concentrated liquidity positions on Uniswap V3 or Aerodrome Slipstream
+            Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across multiple networks
           </p>
         </div>
 
