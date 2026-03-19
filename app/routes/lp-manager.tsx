@@ -1631,8 +1631,7 @@ export default function LpManager() {
                 the original owner who can then close, migrate, or re-lock the position as desired.
               </p>
               <p style={{ margin: 0 }}>
-                <strong style={{ color: "var(--text)" }}>Closing a position</strong> (available after the vault lock expires and the NFT
-                is withdrawn) is a multi-step process executed by the LP Manager:{" "}
+                The <strong style={{ color: "var(--text)" }}>"Close Position" button</strong> (visible on each locked position card once the vault lock expires and the NFT is withdrawn) executes a multi-step process:{" "}
                 (1) <code style={{ color: "#10b981" }}>decreaseLiquidity()</code> removes all liquidity from the tick range and credits
                 the owed token amounts to the position;{" "}
                 (2) <code style={{ color: "#10b981" }}>collect()</code> transfers those token amounts plus any uncollected fees to the
