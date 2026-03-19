@@ -143,6 +143,7 @@ export default function PurchaseCrypto() {
                   { label: 'Aerodrome Swap → USDC', icon: '→', muted: true, link: 'https://aerodrome.finance/swap' },
                   { label: 'Withdraw to CEX via Base', icon: '→', muted: true },
                   { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
+                  { label: 'Convert USDC → USD', icon: '→', muted: true },
                   { label: 'ACH Transfer', icon: '→', muted: true },
                   { label: 'Bank (USD)', icon: '🏦' },
                 ].map((step, i) =>
