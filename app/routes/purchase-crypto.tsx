@@ -15,6 +15,7 @@ export default function PurchaseCrypto() {
   const [cryptoCurrency, setCryptoCurrency] = useState('usdc');
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [disclaimerAgreed, setDisclaimerAgreed] = useState(false);
 
   // MoonPay configuration
   const MOONPAY_API_KEY = import.meta.env.VITE_MOONPAY_PUBLISHABLE_KEY;
@@ -70,7 +71,7 @@ export default function PurchaseCrypto() {
     setIframeUrl(null);
   };
 
-  const isDisabled = !amount || parseFloat(amount) <= 0;
+  const isDisabled = !amount || parseFloat(amount) <= 0 || !disclaimerAgreed;
 
   return (
     <main>
@@ -389,6 +390,51 @@ export default function PurchaseCrypto() {
             </div>
           </div>
 
+          {/* Disclaimer */}
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.06)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.25rem',
+            fontSize: '0.82rem',
+            color: 'var(--muted)',
+            lineHeight: '1.6',
+          }}>
+            <div style={{ fontWeight: 600, color: '#f87171', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+              Disclaimer — Please Read Before Proceeding
+            </div>
+            <p style={{ marginBottom: '0.6rem' }}>
+              NYK Labs provides a <strong style={{ color: 'var(--text)' }}>pure passthrough</strong> to
+              MoonPay's payment widget. We do not collect, store, or have access to any data relating to
+              your transactions, identity, payment details, or personal information. All transaction data
+              is handled solely by MoonPay under their own privacy policy and terms of service.
+            </p>
+            <p style={{ marginBottom: '0.6rem' }}>
+              Any issues, disputes, failed transactions, refunds, or compliance matters are strictly
+              between you and MoonPay. NYK Labs has no ability to intervene, reverse, or assist with
+              any MoonPay transaction.
+            </p>
+            <p style={{ marginBottom: '1rem' }}>
+              <strong style={{ color: 'var(--text)' }}>By using this feature, you agree that NYK Labs
+              bears no liability whatsoever</strong> for any loss, damage, or inconvenience arising from
+              your use of MoonPay's services, including but not limited to transaction failures, incorrect
+              amounts, network issues, regulatory holds, or account restrictions imposed by MoonPay.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={disclaimerAgreed}
+                onChange={(e) => setDisclaimerAgreed(e.target.checked)}
+                style={{ marginTop: '0.15rem', width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--accent)' }}
+              />
+              <span>
+                I have read and agree to the disclaimer above. I understand that NYK Labs is not responsible
+                for any issues arising from my use of MoonPay's services.
+              </span>
+            </label>
+          </div>
+
           {/* Action Button */}
           <button
             type="submit"
@@ -403,7 +449,7 @@ export default function PurchaseCrypto() {
           </button>
 
           {/* Helper Text */}
-          {isDisabled && (
+          {(!amount || parseFloat(amount) <= 0) && (
             <p style={{
               textAlign: 'center',
               fontSize: '0.9rem',
@@ -411,6 +457,16 @@ export default function PurchaseCrypto() {
               marginTop: '0.75rem',
             }}>
               Enter an amount above to continue
+            </p>
+          )}
+          {amount && parseFloat(amount) > 0 && !disclaimerAgreed && (
+            <p style={{
+              textAlign: 'center',
+              fontSize: '0.9rem',
+              color: '#f87171',
+              marginTop: '0.75rem',
+            }}>
+              Please read and accept the disclaimer above to continue
             </p>
           )}
         </div>
