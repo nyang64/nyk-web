@@ -25,6 +25,7 @@ const CHAIN = {
   OPTIMISM:     10,
   POLYGON:      137,
   BNB:          56,
+  BNB_TESTNET:  97,
 };
 
 // Chain metadata used for wallet_addEthereumChain (EIP-3085) when a chain is
@@ -70,6 +71,12 @@ const CHAIN_META: Record<number, {
     rpcUrls: ["https://bsc-dataseed.binance.org"],
     nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
     blockExplorerUrls: ["https://bscscan.com"],
+  },
+  [CHAIN.BNB_TESTNET]: {
+    chainName: "BNB Smart Chain Testnet",
+    rpcUrls: ["https://bsc-testnet-dataseed.bnbchain.org"],
+    nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
+    blockExplorerUrls: ["https://testnet.bscscan.com"],
   },
 };
 
@@ -130,6 +137,7 @@ const WETH_BY_CHAIN: Partial<Record<number, string>> = {
   [CHAIN.OPTIMISM]:     "0x4200000000000000000000000000000000000006",
   [CHAIN.POLYGON]:      "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WPOL
   [CHAIN.BNB]:          "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
+  [CHAIN.BNB_TESTNET]:  "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd", // WBNB testnet
 };
 
 // PancakeSwap V3 uses the same factory + NFPM address across all supported chains
@@ -146,6 +154,11 @@ const PANCAKESWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> =
   [CHAIN.BNB]: {
     factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
     nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+  },
+  // BNB testnet has a different NFPM address from mainnet
+  [CHAIN.BNB_TESTNET]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x427bF5b37357632377eCbEC9de3626C71A5396c1",
   },
 };
 
@@ -195,6 +208,14 @@ const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
     { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
     { address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", symbol: "CAKE", decimals: 18 },
   ],
+  // BNB testnet — PancakeSwap V3 only (Uniswap V3 not deployed on BSC testnet)
+  // All tokens have 18 decimals, same as BNB mainnet
+  [CHAIN.BNB_TESTNET]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "tBNB", decimals: 18 },
+    { address: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd", symbol: "WBNB", decimals: 18 },
+    { address: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd", symbol: "USDT", decimals: 18 },
+    { address: "0xFa60D973F7642B748046464e165A65B7323b0C73", symbol: "CAKE", decimals: 18 },
+  ],
 };
 
 // ─── Token discovery helpers ──────────────────────────────────────────────────
@@ -207,6 +228,7 @@ const EXPLORER_API: Partial<Record<number, string>> = {
   [CHAIN.OPTIMISM]:     "https://api-optimistic.etherscan.io/api",
   [CHAIN.POLYGON]:      "https://api.polygonscan.com/api",
   [CHAIN.BNB]:          "https://api.bscscan.com/api",
+  [CHAIN.BNB_TESTNET]:  "https://api-testnet.bscscan.com/api",
 };
 
 async function fetchExplorerTokens(
@@ -496,7 +518,8 @@ export default function LpManager() {
     : chainId !== null              ? "Unsupported Network"
     : null;
 
-  const isSupported = chainId !== null && chainId in UNISWAP_ADDRESSES;
+  const isSupported = chainId !== null &&
+    (chainId in UNISWAP_ADDRESSES || chainId in PANCAKESWAP_ADDRESSES);
 
   // Slipstream protocols are only available on chains that have a SLIPSTREAM_ADDRESSES entry
   const isSlipstreamUnsupported = isSlipstream(protocol) && !(chainId !== null && chainId in SLIPSTREAM_ADDRESSES);
@@ -504,6 +527,8 @@ export default function LpManager() {
   const isAeroUnsupported = isSlipstreamUnsupported;
   // PancakeSwap V3 is not on Base Sepolia, Optimism, or Polygon
   const isPCSUnsupported = protocol === "pancakeswap" && !(chainId !== null && chainId in PANCAKESWAP_ADDRESSES);
+  // Uniswap V3 is not on BNB testnet (PancakeSwap only there)
+  const isUniswapUnsupported = protocol === "uniswap" && !(chainId !== null && chainId in UNISWAP_ADDRESSES);
 
   const t0 = walletTokens.find((t) => t.address.toLowerCase() === token0Addr.toLowerCase());
   const t1 = walletTokens.find((t) => t.address.toLowerCase() === token1Addr.toLowerCase());
@@ -616,6 +641,8 @@ export default function LpManager() {
     if (protocol === "aerodrome" && chainId !== CHAIN.BASE_MAINNET) setProtocol("uniswap");
     if (protocol === "velodrome" && chainId !== CHAIN.OPTIMISM) setProtocol("uniswap");
     if (protocol === "pancakeswap" && !(chainId in PANCAKESWAP_ADDRESSES)) setProtocol("uniswap");
+    // BNB testnet has PancakeSwap only — auto-switch away from Uniswap
+    if (protocol === "uniswap" && !(chainId in UNISWAP_ADDRESSES) && chainId in PANCAKESWAP_ADDRESSES) setProtocol("pancakeswap");
   }, [chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-populate vault address and lock NFPM when chain / protocol changes
@@ -817,6 +844,10 @@ export default function LpManager() {
     }
     if (isPCSUnsupported) {
       setTxStatus({ type: "error", message: "PancakeSwap V3 is not available on this network. Switch to Base Mainnet, Arbitrum One, or BNB Chain, or select Uniswap V3." });
+      return;
+    }
+    if (isUniswapUnsupported) {
+      setTxStatus({ type: "error", message: "Uniswap V3 is not available on this network. Select PancakeSwap V3." });
       return;
     }
 
@@ -1244,6 +1275,7 @@ export default function LpManager() {
     isSupported &&
     !isAeroUnsupported &&
     !isPCSUnsupported &&
+    !isUniswapUnsupported &&
     !!t0 && !!t1 &&
     !sameToken &&
     !!startingPrice &&
@@ -1440,6 +1472,7 @@ export default function LpManager() {
                     : chainId === CHAIN.OPTIMISM    ? "#ff0420"
                     : chainId === CHAIN.POLYGON     ? "#8247e5"
                     : chainId === CHAIN.BNB         ? "#f0b90b"
+                    : chainId === CHAIN.BNB_TESTNET ? "#d97706"
                     : "#ef4444"
                   )}
                 >
@@ -1486,7 +1519,8 @@ export default function LpManager() {
                   <option value={CHAIN.POLYGON}>Polygon</option>
                   <option value={CHAIN.BNB}>BNB Chain</option>
                   <option value={CHAIN.BASE_SEPOLIA}>Base Sepolia</option>
-                  {chainId !== null && !(chainId in UNISWAP_ADDRESSES) && chainId !== CHAIN.BASE_SEPOLIA && (
+                  <option value={CHAIN.BNB_TESTNET}>BNB Testnet</option>
+                  {chainId !== null && !isSupported && chainId !== CHAIN.BASE_SEPOLIA && chainId !== CHAIN.BNB_TESTNET && (
                     <option value={chainId}>Unknown ({chainId})</option>
                   )}
                 </select>
@@ -1541,9 +1575,11 @@ export default function LpManager() {
         <div style={S.card}>
           <p style={S.sectionTitle}>Protocol</p>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <button style={S.protocolTab(protocol === "uniswap")} onClick={() => setProtocol("uniswap")}>
-              Uniswap V3
-            </button>
+            {(chainId === null || chainId in UNISWAP_ADDRESSES) && (
+              <button style={S.protocolTab(protocol === "uniswap")} onClick={() => setProtocol("uniswap")}>
+                Uniswap V3
+              </button>
+            )}
             {chainId !== null && chainId in PANCAKESWAP_ADDRESSES && (
               <button style={S.protocolTab(protocol === "pancakeswap")} onClick={() => setProtocol("pancakeswap")}>
                 PancakeSwap V3
