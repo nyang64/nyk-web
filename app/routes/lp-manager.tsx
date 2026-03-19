@@ -508,15 +508,22 @@ export default function LpManager() {
   const t0 = walletTokens.find((t) => t.address.toLowerCase() === token0Addr.toLowerCase());
   const t1 = walletTokens.find((t) => t.address.toLowerCase() === token1Addr.toLowerCase());
   const sameToken = !!token0Addr && token0Addr.toLowerCase() === token1Addr.toLowerCase();
+  // Label fallbacks: use symbol if token is found, else truncated address, else placeholder
+  const t0Label = t0?.symbol ?? (token0Addr ? `${token0Addr.slice(0, 6)}…` : "Token0");
+  const t1Label = t1?.symbol ?? (token1Addr ? `${token1Addr.slice(0, 6)}…` : "Token1");
 
-  // Sorted pair (by address, as Uniswap requires). Price inputs are always expressed
-  // as sorted1/sorted0 regardless of which token the user puts in the t0/t1 dropdowns.
+  // Sorted pair (by address, as Uniswap requires).
   const sorted0 = t0 && t1
     ? (t0.address.toLowerCase() < t1.address.toLowerCase() ? t0 : t1)
     : t0 ?? null;
   const sorted1 = t0 && t1
     ? (t0.address.toLowerCase() < t1.address.toLowerCase() ? t1 : t0)
     : t1 ?? null;
+  // True when address sort swapped the user's selection (e.g. user picked WETH as token0
+  // but USDC has a lower address so USDC becomes sorted0).  When true, the user's natural
+  // price direction is sorted0/sorted1 (e.g. USDC per WETH), which is the inverse of the
+  // pool's internal direction.  We accept prices in the user's direction and invert internally.
+  const pairSwapped = !!(t0 && t1 && t0.address.toLowerCase() > t1.address.toLowerCase());
 
   const feeOptions = protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS;
 
@@ -525,13 +532,27 @@ export default function LpManager() {
       ? selectedSpacing
       : feeOptions.find((o) => o.fee === selectedFee)?.tickSpacing ?? 200;
 
-  // Computed sqrtPriceX96 preview — prices are always in sorted1/sorted0 terms
+  // Reciprocal hint: shows the opposite direction as a cross-check
+  // Prices are always entered as t1/t0 (user's selection order), so reciprocal is t0/t1.
+  const reciprocalHint = (priceStr: string) => {
+    if (!t0 || !t1) return "";
+    const p = parseFloat(priceStr);
+    if (!p || p <= 0) return "";
+    const recip = 1 / p;
+    const fmt = recip >= 1000 ? recip.toFixed(2) : recip >= 1 ? recip.toFixed(4) : recip.toPrecision(4);
+    return `= ${fmt} ${t0.symbol} per ${t1.symbol}`;
+  };
+
+  // Convert a user-entered price to pool's native sorted1/sorted0 direction
+  const toPoolPrice = (userPrice: number) => pairSwapped ? 1 / userPrice : userPrice;
+
+  // Computed sqrtPriceX96 preview
   const sqrtPricePreview = (() => {
     if (!sorted0 || !sorted1) return "";
     const p = parseFloat(startingPrice);
     if (!p || p <= 0) return "";
     try {
-      return priceToSqrtPriceX96(p, sorted0.decimals, sorted1.decimals).toString();
+      return priceToSqrtPriceX96(toPoolPrice(p), sorted0.decimals, sorted1.decimals).toString();
     } catch {
       return "";
     }
@@ -539,17 +560,21 @@ export default function LpManager() {
 
   const minTickPreview = (() => {
     if (!sorted0 || !sorted1) return "";
-    const p = parseFloat(minPrice);
+    // When pairSwapped: user's min is the high end of the price range in pool terms → tickUpper direction
+    // We want tickLower (lower pool price), which corresponds to user's max price
+    const p = parseFloat(pairSwapped ? maxPrice : minPrice);
     if (!p || p <= 0) return "";
-    const raw = priceToTick(p, sorted0.decimals, sorted1.decimals);
+    const raw = priceToTick(toPoolPrice(p), sorted0.decimals, sorted1.decimals);
     return snapTick(raw, tickSpacing, true).toString();
   })();
 
   const maxTickPreview = (() => {
     if (!sorted0 || !sorted1) return "";
-    const p = parseFloat(maxPrice);
+    // When pairSwapped: user's max is the low end of the price range in pool terms → tickLower direction
+    // We want tickUpper (higher pool price), which corresponds to user's min price
+    const p = parseFloat(pairSwapped ? minPrice : maxPrice);
     if (!p || p <= 0) return "";
-    const raw = priceToTick(p, sorted0.decimals, sorted1.decimals);
+    const raw = priceToTick(toPoolPrice(p), sorted0.decimals, sorted1.decimals);
     return snapTick(raw, tickSpacing, false).toString();
   })();
 
@@ -704,9 +729,11 @@ export default function LpManager() {
               const contract = new ethers.Contract(t.address, ERC20_ABI, provider);
               bal = await contract.balanceOf(connectedAddress);
             }
-            // Seed and custom tokens always shown (even at 0 balance).
+            // Seed, custom, and currently-selected tokens always shown (even at 0 balance).
             // Log-discovered tokens shown only if balance > 0.
-            if (isSeed || isCustom || bal > 0n) {
+            const isSelected = t.address.toLowerCase() === token0Addr.toLowerCase() ||
+                               t.address.toLowerCase() === token1Addr.toLowerCase();
+            if (isSeed || isCustom || isSelected || bal > 0n) {
               results.push({ ...t, balance: ethers.formatUnits(bal, t.decimals) });
             }
           } catch {
@@ -823,10 +850,17 @@ export default function LpManager() {
       const isNativeETHSorted0 = isNativeETH(swapped ? t1.address : t0.address);
       const isNativeETHSorted1 = isNativeETH(swapped ? t0.address : t1.address);
 
-      // Prices are always entered as sorted1/sorted0 (e.g. USDC per HLRR) — no inversion.
-      const humanPrice = parseFloat(startingPrice);
-      const humanMin = parseFloat(minPrice);
-      const humanMax = parseFloat(maxPrice);
+      // User enters prices in their natural direction (token1/token0 as selected in the dropdowns).
+      // When pairSwapped (address sort reordered the pair), convert to pool's sorted1/sorted0 direction.
+      const userStartingPrice = parseFloat(startingPrice);
+      const userMinPrice = parseFloat(minPrice);
+      const userMaxPrice = parseFloat(maxPrice);
+
+      // Pool direction prices: invert when pairSwapped; min/max also swap because a higher
+      // user price (e.g. more USDC per WETH) maps to a lower pool price (less WETH per USDC).
+      const humanPrice = wasSwapped ? 1 / userStartingPrice : userStartingPrice;
+      const humanMin   = wasSwapped ? 1 / userMaxPrice      : userMinPrice;
+      const humanMax   = wasSwapped ? 1 / userMinPrice      : userMaxPrice;
 
       const sqrtPrice = priceToSqrtPriceX96(humanPrice, localSorted0.decimals, localSorted1.decimals);
 
@@ -855,14 +889,21 @@ export default function LpManager() {
           );
           if (existingPool !== ethers.ZeroAddress) {
             const pool = new ethers.Contract(existingPool, UNISWAP_POOL_ABI, provider2);
-            const [, currentTick]: [bigint, number] = await pool.slot0();
+            const [, currentTickRaw] = await pool.slot0();
+            const currentTick = Number(currentTickRaw);
             if (currentTick < tickLower || currentTick >= tickUpper) {
-              const currentPrice = (1.0001 ** currentTick) * Math.pow(10, localSorted0.decimals - localSorted1.decimals);
+              // currentPrice is in pool's native sorted1/sorted0 direction
+              const poolCurrentPrice = (1.0001 ** currentTick) * Math.pow(10, localSorted0.decimals - localSorted1.decimals);
+              // Show price and range in user's entered direction
+              const displayPrice = wasSwapped ? 1 / poolCurrentPrice : poolCurrentPrice;
+              const [sym0, sym1] = wasSwapped
+                ? [localSorted0.symbol, localSorted1.symbol]  // user direction: sorted0/sorted1
+                : [localSorted1.symbol, localSorted0.symbol]; // pool direction: sorted1/sorted0
               setTxStatus({
                 type: "error",
                 message:
-                  `Pool already exists at tick ${currentTick} (≈$${currentPrice.toFixed(4)} ${localSorted1.symbol}/${localSorted0.symbol}), ` +
-                  `which is OUTSIDE your range [$${humanMin}–$${humanMax}]. ` +
+                  `Pool already exists at tick ${currentTick} (≈$${displayPrice.toFixed(4)} ${sym0}/${sym1}), ` +
+                  `which is OUTSIDE your range [$${userMinPrice}–$${userMaxPrice}]. ` +
                   `Switch to a different fee tier (e.g. 1%) to create a fresh pool at the correct price.`,
               });
               return;
@@ -1195,6 +1236,9 @@ export default function LpManager() {
 
   // ─── Validation ──────────────────────────────────────────────────────────────
 
+  const amount0Exceeds = !!t0 && !!amount0 && parseFloat(amount0) > parseFloat(t0.balance);
+  const amount1Exceeds = !!t1 && !!amount1 && parseFloat(amount1) > parseFloat(t1.balance);
+
   const formValid =
     !!connectedAddress &&
     isSupported &&
@@ -1211,8 +1255,10 @@ export default function LpManager() {
     parseFloat(minPrice) < parseFloat(maxPrice) &&
     !!amount0 &&
     parseFloat(amount0) > 0 &&
+    !amount0Exceeds &&
     !!amount1 &&
-    parseFloat(amount1) > 0;
+    parseFloat(amount1) > 0 &&
+    !amount1Exceeds;
 
   const isSubmitting =
     txStatus.type === "approving_token0" ||
@@ -1639,11 +1685,12 @@ export default function LpManager() {
           )}
         </div>
 
+
         {/* Starting price */}
         <div style={S.card}>
           <p style={S.sectionTitle}>Starting Price</p>
           <label style={S.label}>
-            {sorted1?.symbol ?? "Token1"} per {sorted0?.symbol ?? "Token0"}
+            {t1Label} per {t0Label}
           </label>
           <input
             type="number"
@@ -1654,6 +1701,9 @@ export default function LpManager() {
             value={startingPrice}
             onChange={(e) => setStartingPrice(e.target.value)}
           />
+          {reciprocalHint(startingPrice) && (
+            <p style={S.hint}>{reciprocalHint(startingPrice)}</p>
+          )}
           {sqrtPricePreview && (
             <p style={S.hint}>sqrtPriceX96: {sqrtPricePreview}</p>
           )}
@@ -1665,7 +1715,7 @@ export default function LpManager() {
           <div style={S.row}>
             <div>
               <label style={S.label}>
-                Min Price ({sorted1?.symbol ?? "T1"}/{sorted0?.symbol ?? "T0"})
+                Min Price ({t1Label}/{t0Label})
               </label>
               <input
                 type="number"
@@ -1676,11 +1726,14 @@ export default function LpManager() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
               />
+              {reciprocalHint(minPrice) && (
+                <p style={S.hint}>{reciprocalHint(minPrice)}</p>
+              )}
               {minTickPreview && <p style={S.hint}>tickLower: {minTickPreview}</p>}
             </div>
             <div>
               <label style={S.label}>
-                Max Price ({sorted1?.symbol ?? "T1"}/{sorted0?.symbol ?? "T0"})
+                Max Price ({t1Label}/{t0Label})
               </label>
               <input
                 type="number"
@@ -1691,6 +1744,9 @@ export default function LpManager() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
               />
+              {reciprocalHint(maxPrice) && (
+                <p style={S.hint}>{reciprocalHint(maxPrice)}</p>
+              )}
               {maxTickPreview && <p style={S.hint}>tickUpper: {maxTickPreview}</p>}
             </div>
           </div>
@@ -1706,12 +1762,12 @@ export default function LpManager() {
           <p style={S.sectionTitle}>Deposit Amounts</p>
           <div style={S.row}>
             <div>
-              <label style={S.label}>{t0?.symbol ?? "Token 0"} amount</label>
+              <label style={S.label}>{t0Label} amount</label>
               <input
                 type="number"
                 min="0"
                 step="any"
-                style={S.input}
+                style={{ ...S.input, ...(amount0Exceeds ? { borderColor: "#ef4444" } : {}) }}
                 placeholder="0.0"
                 value={amount0}
                 onChange={(e) => setAmount0(e.target.value)}
@@ -1719,20 +1775,30 @@ export default function LpManager() {
               {t0 && (
                 <p style={S.hint}>Wallet: {parseFloat(t0.balance).toFixed(4)} {t0.symbol}</p>
               )}
+              {amount0Exceeds && (
+                <p style={{ color: "#ef4444", fontSize: "0.78rem", marginTop: "0.25rem" }}>
+                  Exceeds available balance ({parseFloat(t0!.balance).toFixed(4)} {t0!.symbol})
+                </p>
+              )}
             </div>
             <div>
-              <label style={S.label}>{t1?.symbol ?? "Token 1"} amount</label>
+              <label style={S.label}>{t1Label} amount</label>
               <input
                 type="number"
                 min="0"
                 step="any"
-                style={S.input}
+                style={{ ...S.input, ...(amount1Exceeds ? { borderColor: "#ef4444" } : {}) }}
                 placeholder="0.0"
                 value={amount1}
                 onChange={(e) => setAmount1(e.target.value)}
               />
               {t1 && (
                 <p style={S.hint}>Wallet: {parseFloat(t1.balance).toFixed(4)} {t1.symbol}</p>
+              )}
+              {amount1Exceeds && (
+                <p style={{ color: "#ef4444", fontSize: "0.78rem", marginTop: "0.25rem" }}>
+                  Exceeds available balance ({parseFloat(t1!.balance).toFixed(4)} {t1!.symbol})
+                </p>
               )}
             </div>
           </div>
