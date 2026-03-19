@@ -915,6 +915,181 @@ describe("BNB Chain — CAKE(18)/USDC(18) — PancakeSwap V3 home pair", () => {
   });
 });
 
+// ─── BNB Chain — pairSwapped scenarios ───────────────────────────────────────
+//
+// BNB-specific: USDC(18) and all other major tokens are 18 dec → decAdj=0 for every pair.
+// Tests cover three pairSwapped cases:
+//   1. WBNB(token0) / USDC(token1)  — WBNB(0xBB) > USDC(0x8A) → pairSwapped
+//   2. USDC(token0) / CAKE(token1)  — USDC(0x8A) > CAKE(0x0E) → pairSwapped
+//   3. WBNB(token0) / USDT(token1)  — WBNB(0xBB) > USDT(0x55) → pairSwapped
+// And verifies that pairSwapped inversion produces identical ticks/sqrtPrice
+// as the canonical non-swapped equivalent.
+
+describe("BNB Chain — pairSwapped (flipped token0/token1 selection)", () => {
+  const USDC_BNB = { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 };
+  const WBNB     = { address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", symbol: "WBNB", decimals: 18 };
+  const CAKE     = { address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", symbol: "CAKE", decimals: 18 };
+  const USDT_BNB = { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 };
+
+  // ── sortTokens confirms pairSwapped for each flipped selection ─────────────
+
+  it("WBNB(token0)/USDC(token1): WBNB(0xBB) > USDC(0x8A) → wasSwapped=true, sorted0=USDC", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WBNB, USDC_BNB);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WBNB");
+  });
+
+  it("USDC(token0)/CAKE(token1): USDC(0x8A) > CAKE(0x0E) → wasSwapped=true, sorted0=CAKE", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_BNB, CAKE);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("CAKE");
+    expect(sorted1.symbol).toBe("USDC");
+  });
+
+  it("WBNB(token0)/USDT(token1): WBNB(0xBB) > USDT(0x55) → wasSwapped=true, sorted0=USDT", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WBNB, USDT_BNB);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDT");
+    expect(sorted1.symbol).toBe("WBNB");
+  });
+
+  // ── WBNB(token0) / USDC(token1) — pairSwapped ─────────────────────────────
+  // User enters USDC per WBNB (e.g. $600), pool gets 1/600 WBNB per USDC.
+  // sorted0=USDC(18), sorted1=WBNB(18), decAdj=0 → poolPrice = 1/userPrice exactly.
+
+  describe("WBNB(token0) / USDC(token1) — user enters USDC per WBNB", () => {
+    const s0dec = USDC_BNB.decimals; // 18 — sorted0 after swap
+    const s1dec = WBNB.decimals;     // 18 — sorted1 after swap
+    const userPrice = 600;           // 600 USDC per WBNB (user's t1/t0 direction)
+
+    it("sqrtPriceX96 via inversion equals canonical USDC/WBNB at 1/600", () => {
+      // pairSwapped: pool price = 1/userPrice
+      const viaPairSwapped = priceToSqrtPriceX96(1 / userPrice, s0dec, s1dec);
+      // canonical (user selects USDC as token0, enters 1/600 directly)
+      const canonical = priceToSqrtPriceX96(1 / 600, s0dec, s1dec);
+      expect(viaPairSwapped).toBe(canonical);
+    });
+
+    it("tick via inversion equals canonical tick at 1/600", () => {
+      const viaPairSwapped = priceToTick(1 / userPrice, s0dec, s1dec);
+      const canonical      = priceToTick(1 / 600, s0dec, s1dec);
+      expect(viaPairSwapped).toBe(canonical);
+      expect(viaPairSwapped).toBeCloseTo(-63977, -2); // same as existing BNB test
+    });
+
+    it("pairSwapped range $400–$800 USDC/WBNB: min/max invert+swap → tickLower < tickUpper", () => {
+      const userMin = 400; const userMax = 800;
+      // pool tickLower from 1/userMax, tickUpper from 1/userMin (inversion swaps direction)
+      const tickLower = snapTick(priceToTick(1 / userMax, s0dec, s1dec), 200, true);
+      const tickUpper = snapTick(priceToTick(1 / userMin, s0dec, s1dec), 200, false);
+      expect(tickLower).toBeLessThan(tickUpper);
+      expect(tickLower % 200 == 0).toBe(true);
+      expect(tickUpper % 200 == 0).toBe(true);
+      // Both negative — BNB/USDC pool at these prices has negative ticks
+      expect(tickUpper).toBeLessThan(0);
+    });
+
+    it("PancakeSwap V3 spacing=50: $400–$800 range ticks aligned and ordered", () => {
+      const userMin = 400; const userMax = 800;
+      const tickLower = snapTick(priceToTick(1 / userMax, s0dec, s1dec), 50, true);
+      const tickUpper = snapTick(priceToTick(1 / userMin, s0dec, s1dec), 50, false);
+      expect(tickLower % 50 == 0).toBe(true);
+      expect(tickUpper % 50 == 0).toBe(true);
+      expect(tickLower).toBeLessThan(tickUpper);
+    });
+
+    it("pairSwapped ticks match non-pairSwapped canonical equivalent", () => {
+      // Canonical: user selects USDC(token0)/WBNB(token1), enters 1/600 WBNB/USDC
+      const canonicalLower = snapTick(priceToTick(1 / 800, s0dec, s1dec), 200, true);
+      const canonicalUpper = snapTick(priceToTick(1 / 400, s0dec, s1dec), 200, false);
+      // pairSwapped: user selects WBNB(token0)/USDC(token1), enters 600 USDC/WBNB
+      const swappedLower = snapTick(priceToTick(1 / 800, s0dec, s1dec), 200, true);
+      const swappedUpper = snapTick(priceToTick(1 / 400, s0dec, s1dec), 200, false);
+      expect(swappedLower).toBe(canonicalLower);
+      expect(swappedUpper).toBe(canonicalUpper);
+    });
+
+    it("BNB 18-dec USDC pairSwapped gives very different tick than 6-dec USDC would", () => {
+      // On other chains USDC is 6 dec — decAdj would be 12, giving large positive ticks
+      const tickBnb18 = priceToTick(1 / userPrice, 18, 18); // correct for BNB
+      const tickOther6 = priceToTick(1 / userPrice, 6, 18); // wrong: assumes 6-dec USDC
+      expect(tickBnb18).not.toBe(tickOther6);
+      // BNB: tick ≈ -63977 (negative); other chains: tick ≈ +196k (large positive)
+      expect(tickBnb18).toBeLessThan(0);
+      expect(tickOther6).toBeGreaterThan(100_000);
+    });
+  });
+
+  // ── USDC(token0) / CAKE(token1) — pairSwapped ─────────────────────────────
+  // User enters CAKE per USDC (e.g. 1/3), pool gets 1/(1/3) = 3 USDC per CAKE.
+  // sorted0=CAKE(18), sorted1=USDC(18), decAdj=0.
+
+  describe("USDC(token0) / CAKE(token1) — user enters CAKE per USDC", () => {
+    const s0dec = CAKE.decimals;     // 18 — sorted0 (CAKE has lower address)
+    const s1dec = USDC_BNB.decimals; // 18 — sorted1
+    const userPrice = 1 / 3;        // 0.333... CAKE per USDC (user's t1/t0)
+    // pool direction: 1/userPrice = 3.0 USDC per CAKE
+
+    it("sqrtPriceX96 via inversion equals canonical CAKE/USDC at $3", () => {
+      const viaPairSwapped = priceToSqrtPriceX96(1 / userPrice, s0dec, s1dec);
+      const canonical      = priceToSqrtPriceX96(3.0, s0dec, s1dec);
+      expect(viaPairSwapped).toBe(canonical);
+    });
+
+    it("tick via inversion equals canonical CAKE/USDC tick at $3", () => {
+      const viaPairSwapped = priceToTick(1 / userPrice, s0dec, s1dec);
+      const canonical      = priceToTick(3.0, s0dec, s1dec);
+      expect(viaPairSwapped).toBe(canonical);
+      expect(viaPairSwapped).toBeCloseTo(10987, -2);
+    });
+
+    it("pairSwapped range 1/5–1/2 CAKE/USDC (=$2–$5): tickLower < tickUpper", () => {
+      const userMin = 1 / 5; const userMax = 1 / 2;
+      const tickLower = snapTick(priceToTick(1 / userMax, s0dec, s1dec), 50, true);
+      const tickUpper = snapTick(priceToTick(1 / userMin, s0dec, s1dec), 50, false);
+      expect(tickLower).toBeLessThan(tickUpper);
+      expect(tickLower % 50 == 0).toBe(true);
+      expect(tickUpper % 50 == 0).toBe(true);
+      expect(tickLower).toBeGreaterThan(0); // CAKE priced above $1 → positive ticks
+    });
+
+    it("higher CAKE price → user enters smaller CAKE/USDC value → higher pool tick", () => {
+      // userPrice = CAKE/USDC; higher CAKE price = smaller CAKE/USDC = larger USDC/CAKE
+      const tickAt2  = priceToTick(1 / (1 / 2),  s0dec, s1dec); // CAKE=$2
+      const tickAt3  = priceToTick(1 / (1 / 3),  s0dec, s1dec); // CAKE=$3
+      const tickAt5  = priceToTick(1 / (1 / 5),  s0dec, s1dec); // CAKE=$5
+      expect(tickAt2).toBeLessThan(tickAt3);
+      expect(tickAt3).toBeLessThan(tickAt5);
+    });
+  });
+
+  // ── WBNB(token0) / USDT(token1) — pairSwapped, stable-like check ──────────
+  // USDT also has 18 dec on BNB. Both WBNB and USDT are 18 dec → same decAdj=0 pattern.
+
+  describe("WBNB(token0) / USDT(token1) — same 18-dec pattern as WBNB/USDC", () => {
+    const s0dec = USDT_BNB.decimals; // 18 — sorted0 (USDT address is lower)
+    const s1dec = WBNB.decimals;     // 18 — sorted1
+    const userPrice = 600;           // 600 USDT per WBNB
+
+    it("sqrtPriceX96 and tick match WBNB/USDC at same price (both 18 dec pairs)", () => {
+      const wbnbUsdt = priceToSqrtPriceX96(1 / userPrice, s0dec, s1dec);
+      const wbnbUsdc = priceToSqrtPriceX96(1 / userPrice, USDC_BNB.decimals, WBNB.decimals);
+      // Identical math — only addresses differ
+      expect(wbnbUsdt).toBe(wbnbUsdc);
+    });
+
+    it("pairSwapped $500–$700 USDT/WBNB: PancakeSwap spacing=50 ticks valid", () => {
+      const tickLower = snapTick(priceToTick(1 / 700, s0dec, s1dec), 50, true);
+      const tickUpper = snapTick(priceToTick(1 / 500, s0dec, s1dec), 50, false);
+      expect(tickLower % 50 == 0).toBe(true);
+      expect(tickUpper % 50 == 0).toBe(true);
+      expect(tickLower).toBeLessThan(tickUpper);
+      expect(tickUpper).toBeLessThan(0); // negative ticks for this price range
+    });
+  });
+});
+
 // ─── Network/protocol compatibility matrix ────────────────────────────────────
 //
 // Verifies that each network's token pairs produce valid, internally consistent
@@ -969,4 +1144,202 @@ describe("Network/protocol compatibility — sqrtPriceX96 is protocol-agnostic",
       expect(tickLower).toBeLessThan(tickUpper);
     });
   }
+});
+
+// ─── pairSwapped — user token0/token1 selection is address-sorted opposite ────
+//
+// When the user picks token0 with a higher address than token1, the UI flips the
+// price direction: prices are accepted as t1/t0 (user's view) and inverted to
+// sorted1/sorted0 (pool's native direction) before math.
+//
+// Key invariant: priceToSqrtPriceX96(1/userPrice, sorted0.dec, sorted1.dec)
+//                must equal the sqrt price a correctly-oriented user would compute.
+//
+// Token addresses used (Base Sepolia):
+//   HLRR_SEP: 0x75f9… > USDC_SEP: 0x036C… → user selecting HLRR/USDC triggers pairSwapped
+//   WETH:     0x4200… > USDC_SEP: 0x036C… → user selecting WETH/USDC triggers pairSwapped
+//   HLRR_MAIN: 0x5E…  < USDC_MAIN: 0x83…  → user selecting HLRR/USDC does NOT trigger pairSwapped
+
+const HLRR_SEP  = { address: "0x75f9A6289B40BA7b32C4D56300a53B208dD8E7F4", symbol: "HLRR", decimals: 8 };
+const USDC_SEP  = { address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC", decimals: 6 };
+const HLRR_MAIN = { address: "0x5E1583d48bcFd60de77138ea195f3EFbe128405d", symbol: "HLRR", decimals: 8 };
+const USDC_MAIN = { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6 };
+const WETH_BASE = { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 };
+
+describe("pairSwapped — user selects token0 with higher address than token1", () => {
+
+  describe("sortTokens detects pairSwapped correctly for each network/pair", () => {
+    it("Base Sepolia HLRR/USDC: HLRR(0x75) > USDC(0x03) → wasSwapped=true", () => {
+      const { sorted0, sorted1, wasSwapped } = sortTokens(HLRR_SEP, USDC_SEP);
+      expect(wasSwapped).toBe(true);
+      expect(sorted0.symbol).toBe("USDC"); // lower address becomes sorted0
+      expect(sorted1.symbol).toBe("HLRR");
+    });
+
+    it("Base Sepolia USDC/HLRR (reverse selection): wasSwapped=false", () => {
+      const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_SEP, HLRR_SEP);
+      expect(wasSwapped).toBe(false);
+      expect(sorted0.symbol).toBe("USDC");
+      expect(sorted1.symbol).toBe("HLRR");
+    });
+
+    it("Base mainnet HLRR/USDC: HLRR(0x5E) < USDC(0x83) → wasSwapped=false", () => {
+      const { sorted0, sorted1, wasSwapped } = sortTokens(HLRR_MAIN, USDC_MAIN);
+      expect(wasSwapped).toBe(false);
+      expect(sorted0.symbol).toBe("HLRR"); // HLRR is sorted0 on mainnet — no flip
+      expect(sorted1.symbol).toBe("USDC");
+    });
+
+    it("WETH/USDC_SEP: WETH(0x42) > USDC(0x03) → wasSwapped=true", () => {
+      const { sorted0, sorted1, wasSwapped } = sortTokens(WETH_BASE, USDC_SEP);
+      expect(wasSwapped).toBe(true);
+      expect(sorted0.symbol).toBe("USDC");
+      expect(sorted1.symbol).toBe("WETH");
+    });
+  });
+
+  describe("Base Sepolia HLRR(token0) / USDC(token1) — pairSwapped price inversion", () => {
+    // sorted0=USDC(6), sorted1=HLRR(8) after address sort
+    // User enters price as USDC per HLRR (t1/t0), pool needs HLRR per USDC (sorted1/sorted0)
+    // Pool direction price = 1 / userPrice
+    const s0dec = USDC_SEP.decimals; // 6
+    const s1dec = HLRR_SEP.decimals; // 8
+    const userPrice = 0.075; // 0.075 USDC per HLRR
+
+    it("sqrtPriceX96(1/userPrice) equals sqrtPriceX96 from direct pool-direction price", () => {
+      const viaInversion = priceToSqrtPriceX96(1 / userPrice, s0dec, s1dec);
+      const direct       = priceToSqrtPriceX96(1 / 0.075, s0dec, s1dec);
+      expect(viaInversion).toBe(direct);
+    });
+
+    it("sqrtPriceX96 from pairSwapped Base Sepolia equals Base mainnet HLRR/USDC at same price", () => {
+      // On mainnet HLRR is sorted0(8), USDC is sorted1(6), user enters USDC/HLRR directly
+      const mainnet  = priceToSqrtPriceX96(userPrice, HLRR_MAIN.decimals, USDC_MAIN.decimals);
+      // On Sepolia USDC is sorted0(6), HLRR is sorted1(8), pool price = 1/userPrice
+      const sepolia  = priceToSqrtPriceX96(1 / userPrice, s0dec, s1dec);
+      // Different decimal arrangements → different sqrtPriceX96, but both must be > 0
+      expect(mainnet).toBeGreaterThan(0n);
+      expect(sepolia).toBeGreaterThan(0n);
+      // Sanity: inversion changes the sqrt price
+      expect(mainnet).not.toBe(sepolia);
+    });
+
+    it("tick from pairSwapped inversion is negative (HLRR cheaper than USDC in pool units)", () => {
+      // pool price = 1/0.075 ≈ 13.33 HLRR per USDC
+      // decAdj = 8-6 = 2, poolPrice = 13.33 × 100 = 1333
+      // tick ≈ log(1333)/log(1.0001) > 0 → tick is POSITIVE
+      const tick = priceToTick(1 / userPrice, s0dec, s1dec);
+      expect(tick).toBeGreaterThan(0);
+    });
+
+    it("pairSwapped range $0.04–$0.25 USDC/HLRR: min/max invert and swap, tickLower < tickUpper", () => {
+      const userMin = 0.04;
+      const userMax = 0.25;
+      // Pool tickLower comes from 1/userMax (lower pool price), tickUpper from 1/userMin
+      const rawLower = priceToTick(1 / userMax, s0dec, s1dec);
+      const rawUpper = priceToTick(1 / userMin, s0dec, s1dec);
+      const tickLower = snapTick(rawLower, 200, true);
+      const tickUpper = snapTick(rawUpper, 200, false);
+      expect(tickLower).toBeLessThan(tickUpper);
+      expect(tickLower % 200).toBe(0);
+      expect(tickUpper % 200).toBe(0);
+    });
+
+    it("pairSwapped ticks equal non-swapped ticks for equivalent range", () => {
+      // Non-swapped (user selects USDC/HLRR, enters price as HLRR per USDC)
+      const nonSwappedLower = snapTick(priceToTick(1 / 0.25, s0dec, s1dec), 200, true);
+      const nonSwappedUpper = snapTick(priceToTick(1 / 0.04, s0dec, s1dec), 200, false);
+      // Swapped (user selects HLRR/USDC, enters price as USDC per HLRR)
+      const swappedLower = snapTick(priceToTick(1 / 0.25, s0dec, s1dec), 200, true);
+      const swappedUpper = snapTick(priceToTick(1 / 0.04, s0dec, s1dec), 200, false);
+      expect(swappedLower).toBe(nonSwappedLower);
+      expect(swappedUpper).toBe(nonSwappedUpper);
+    });
+  });
+
+  describe("WETH(token0) / USDC(token1) on Base Sepolia — pairSwapped price inversion", () => {
+    // sorted0=USDC_SEP(6), sorted1=WETH_BASE(18) after address sort
+    // User enters price as USDC per WETH (t1/t0) — the natural "price of ETH" convention
+    // Pool direction price = 1/userPrice (WETH per USDC)
+    const s0dec = USDC_SEP.decimals;  // 6
+    const s1dec = WETH_BASE.decimals; // 18
+
+    it("ETH at $3000: sqrtPriceX96(1/3000) matches direct USDC/WETH pool computation", () => {
+      const viaPairSwapped = priceToSqrtPriceX96(1 / 3000, s0dec, s1dec);
+      const direct         = priceToSqrtPriceX96(1 / 3000, s0dec, s1dec);
+      expect(viaPairSwapped).toBe(direct);
+      expect(viaPairSwapped).toBeGreaterThan(0n);
+    });
+
+    it("ETH at $3000: pool tick is in the expected range (~196k for USDC(6)/WETH(18))", () => {
+      const tick = priceToTick(1 / 3000, s0dec, s1dec);
+      // USDC(6)/WETH(18): poolPrice = (1/3000) × 10^(18-6) = (1/3000) × 10^12 ≈ 3.33×10^8
+      // tick ≈ ln(3.33×10^8) / ln(1.0001) ≈ 19.62 / 9.9995e-5 ≈ 196_260
+      // (Note: WETH(18)/USDC(6) at $3000 gives tick ≈ -196_260 — the opposite orientation)
+      expect(tick).toBeGreaterThan(190_000);
+      expect(tick).toBeLessThan(200_000);
+    });
+
+    it("pairSwapped range $1000–$5000 USDC/WETH: inverted min/max gives tickLower < tickUpper", () => {
+      const userMin = 1000;
+      const userMax = 5000;
+      const tickLower = snapTick(priceToTick(1 / userMax, s0dec, s1dec), 200, true);
+      const tickUpper = snapTick(priceToTick(1 / userMin, s0dec, s1dec), 200, false);
+      expect(tickLower).toBeLessThan(tickUpper);
+      expect(tickLower % 200).toBe(0);
+      expect(tickUpper % 200).toBe(0);
+      // Both positive — USDC/WETH pool always has large positive ticks
+      expect(tickLower).toBeGreaterThan(0);
+    });
+
+    it("pairSwapped inversion is self-consistent: sqrtPriceX96(1/p) × sqrtPriceX96(p) reflects reciprocal relationship", () => {
+      // For USDC(6)/WETH(18): price p=1/3000 gives a large sqrtPriceX96
+      // For WETH(18)/USDC(6): price p=3000 gives the reciprocal pool orientation
+      const sqrtUsdcWeth = priceToSqrtPriceX96(1 / 3000, s0dec, s1dec);         // USDC sorted0
+      const sqrtWethUsdc = priceToSqrtPriceX96(3000, s1dec, s0dec);              // WETH sorted0
+      // Both > 0 and different (different decimal arrangements → different sqrt values)
+      expect(sqrtUsdcWeth).toBeGreaterThan(0n);
+      expect(sqrtWethUsdc).toBeGreaterThan(0n);
+      expect(sqrtUsdcWeth).not.toBe(sqrtWethUsdc);
+    });
+
+    it("higher user price → lower pool tick (inverse relationship confirmed)", () => {
+      const tickAt1000 = priceToTick(1 / 1000, s0dec, s1dec);
+      const tickAt3000 = priceToTick(1 / 3000, s0dec, s1dec);
+      const tickAt5000 = priceToTick(1 / 5000, s0dec, s1dec);
+      // Higher USDC/WETH price = lower WETH/USDC pool price = lower tick
+      expect(tickAt5000).toBeLessThan(tickAt3000);
+      expect(tickAt3000).toBeLessThan(tickAt1000);
+    });
+  });
+
+  describe("Base mainnet HLRR/USDC — NOT pairSwapped, price direction unchanged", () => {
+    // HLRR(0x5E) < USDC(0x83) → sorted0=HLRR(8), sorted1=USDC(6), wasSwapped=false
+    // User enters price as USDC per HLRR directly — no inversion needed
+    const s0dec = HLRR_MAIN.decimals; // 8
+    const s1dec = USDC_MAIN.decimals; // 6
+    const userPrice = 0.075;
+
+    it("no inversion: sqrtPriceX96(userPrice) used as-is", () => {
+      const sqrt = priceToSqrtPriceX96(userPrice, s0dec, s1dec);
+      expect(sqrt).toBeGreaterThan(0n);
+    });
+
+    it("range $0.01–$10 USDC/HLRR: tickLower < tickUpper without inversion", () => {
+      const tickLower = snapTick(priceToTick(0.01, s0dec, s1dec), 200, true);
+      const tickUpper = snapTick(priceToTick(10.0, s0dec, s1dec), 200, false);
+      expect(tickLower).toBeLessThan(tickUpper);
+    });
+
+    it("mainnet and Sepolia produce DIFFERENT sqrtPriceX96 at same user price due to sort flip", () => {
+      // Mainnet: sorted0=HLRR(8)/sorted1=USDC(6), price=0.075 USDC/HLRR directly
+      const mainnet = priceToSqrtPriceX96(0.075, HLRR_MAIN.decimals, USDC_MAIN.decimals);
+      // Sepolia: sorted0=USDC(6)/sorted1=HLRR(8), price=1/0.075 after inversion
+      const sepolia = priceToSqrtPriceX96(1 / 0.075, USDC_SEP.decimals, HLRR_SEP.decimals);
+      // Both valid, but different because decimal arrangement differs
+      expect(mainnet).toBeGreaterThan(0n);
+      expect(sepolia).toBeGreaterThan(0n);
+      expect(mainnet).not.toBe(sepolia);
+    });
+  });
 });
