@@ -1631,14 +1631,37 @@ export default function LpManager() {
             </div>
 
             <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Vault Lock Flow</div>
-              <p style={{ margin: 0 }}>
+              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Vault Lock &amp; Close Flow</div>
+              <p style={{ marginBottom: "0.6rem" }}>
                 After a position NFT is minted it is <strong style={{ color: "var(--text)" }}>approved and transferred</strong> to the
                 NYK Labs LP Vault contract via <code style={{ color: "#10b981" }}>createLock(manager, tokenId, unlockTime)</code>.
                 The vault records the owner, the position manager address, and the unlock timestamp.
                 During the lock the owner may call <code style={{ color: "#10b981" }}>collectFees()</code> to harvest accrued trading fees
                 at any time. Once the unlock time has passed, <code style={{ color: "#10b981" }}>withdrawNFT()</code> returns the NFT to
                 the original owner who can then close, migrate, or re-lock the position as desired.
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong style={{ color: "var(--text)" }}>Closing a position</strong> (available after the vault lock expires and the NFT
+                is withdrawn) is a multi-step process executed by the LP Manager:{" "}
+                (1) <code style={{ color: "#10b981" }}>decreaseLiquidity()</code> removes all liquidity from the tick range and credits
+                the owed token amounts to the position;{" "}
+                (2) <code style={{ color: "#10b981" }}>collect()</code> transfers those token amounts plus any uncollected fees to the
+                owner's wallet;{" "}
+                (3) <code style={{ color: "#10b981" }}>burn()</code> destroys the now-empty NFT. All three calls are batched into a
+                single <code style={{ color: "#10b981" }}>multicall()</code> transaction to save gas. The two underlying tokens are
+                returned directly to the connected wallet — no intermediary custody at any step.
+              </p>
+            </div>
+
+            <div style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
+              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Wallet Requirement for LP Creation</div>
+              <p style={{ margin: 0 }}>
+                Both tokens of the pair must be held in the <strong style={{ color: "var(--text)" }}>same connected wallet account</strong> at
+                the time of LP creation. The LP Manager reads balances and requests token approvals from whichever account is currently
+                connected — it cannot pull funds from a different account. If your two tokens are split across accounts, transfer them
+                to a single account first, or switch accounts in your wallet before connecting. Use the{" "}
+                <strong style={{ color: "var(--text)" }}>disconnect / reconnect</strong> button in the wallet bar above to switch to the
+                correct account.
               </p>
             </div>
 
