@@ -22,7 +22,9 @@ const CHAIN = {
   BASE_MAINNET: 8453,
   BASE_SEPOLIA: 84532,
   ARBITRUM:     42161,
+  ARB_SEPOLIA:  421614,
   OPTIMISM:     10,
+  OP_SEPOLIA:   11155420,
   POLYGON:      137,
   BNB:          56,
   BNB_TESTNET:  97,
@@ -78,6 +80,18 @@ const CHAIN_META: Record<number, {
     nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
     blockExplorerUrls: ["https://testnet.bscscan.com"],
   },
+  [CHAIN.ARB_SEPOLIA]: {
+    chainName: "Arbitrum Sepolia",
+    rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+  },
+  [CHAIN.OP_SEPOLIA]: {
+    chainName: "OP Sepolia",
+    rpcUrls: ["https://sepolia.optimism.io"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://sepolia-optimistic.etherscan.io"],
+  },
 };
 
 const UNISWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
@@ -104,6 +118,14 @@ const UNISWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
   [CHAIN.BNB]: {
     factory: "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7",
     nfpm: "0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613",
+  },
+  [CHAIN.ARB_SEPOLIA]: {
+    factory: "0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e",
+    nfpm: "0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65",
+  },
+  [CHAIN.OP_SEPOLIA]: {
+    factory: "0x8CE191193D15ea94e11d327b4c7ad8bbE520f6aF",
+    nfpm: "0xdA75cEf1C93078e8b736FCA5D5a30adb97C8957d",
   },
 };
 
@@ -138,6 +160,8 @@ const WETH_BY_CHAIN: Partial<Record<number, string>> = {
   [CHAIN.POLYGON]:      "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WPOL
   [CHAIN.BNB]:          "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
   [CHAIN.BNB_TESTNET]:  "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd", // WBNB testnet
+  [CHAIN.ARB_SEPOLIA]:  "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", // WETH on Arb Sepolia
+  [CHAIN.OP_SEPOLIA]:   "0x4200000000000000000000000000000000000006", // WETH on OP Sepolia
 };
 
 // PancakeSwap V3 uses the same factory + NFPM address across all supported chains
@@ -208,6 +232,16 @@ const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
     { address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
     { address: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", symbol: "CAKE", decimals: 18 },
   ],
+  [CHAIN.ARB_SEPOLIA]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", symbol: "WETH", decimals: 18 },
+    { address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", symbol: "USDC", decimals: 6 },
+  ],
+  [CHAIN.OP_SEPOLIA]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 },
+    { address: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", symbol: "USDC", decimals: 6 },
+  ],
   // BNB testnet — PancakeSwap V3 only (Uniswap V3 not deployed on BSC testnet)
   // All tokens have 18 decimals, same as BNB mainnet
   [CHAIN.BNB_TESTNET]: [
@@ -229,6 +263,8 @@ const EXPLORER_API: Partial<Record<number, string>> = {
   [CHAIN.POLYGON]:      "https://api.polygonscan.com/api",
   [CHAIN.BNB]:          "https://api.bscscan.com/api",
   [CHAIN.BNB_TESTNET]:  "https://api-testnet.bscscan.com/api",
+  [CHAIN.ARB_SEPOLIA]:  "https://api-sepolia.arbiscan.io/api",
+  [CHAIN.OP_SEPOLIA]:   "https://api-sepolia-optimistic.etherscan.io/api",
 };
 
 async function fetchExplorerTokens(
@@ -513,7 +549,9 @@ export default function LpManager() {
     chainId === CHAIN.BASE_MAINNET ? "Base Mainnet"
     : chainId === CHAIN.BASE_SEPOLIA ? "Base Sepolia"
     : chainId === CHAIN.ARBITRUM    ? "Arbitrum One"
+    : chainId === CHAIN.ARB_SEPOLIA ? "Arbitrum Sepolia"
     : chainId === CHAIN.OPTIMISM    ? "OP Mainnet"
+    : chainId === CHAIN.OP_SEPOLIA  ? "OP Sepolia"
     : chainId === CHAIN.POLYGON     ? "Polygon"
     : chainId === CHAIN.BNB         ? "BNB Chain"
     : chainId !== null              ? "Unsupported Network"
@@ -605,11 +643,15 @@ export default function LpManager() {
   })();
 
   const basescanBase =
-    chainId === CHAIN.BASE_MAINNET
-      ? "https://basescan.org"
-      : chainId === CHAIN.ARBITRUM
-      ? "https://arbiscan.io"
-      : "https://sepolia.basescan.org";
+    chainId === CHAIN.BASE_MAINNET  ? "https://basescan.org"
+    : chainId === CHAIN.BASE_SEPOLIA  ? "https://sepolia.basescan.org"
+    : chainId === CHAIN.ARBITRUM      ? "https://arbiscan.io"
+    : chainId === CHAIN.ARB_SEPOLIA   ? "https://sepolia.arbiscan.io"
+    : chainId === CHAIN.OPTIMISM      ? "https://optimistic.etherscan.io"
+    : chainId === CHAIN.OP_SEPOLIA    ? "https://sepolia-optimistic.etherscan.io"
+    : chainId === CHAIN.BNB           ? "https://bscscan.com"
+    : chainId === CHAIN.BNB_TESTNET   ? "https://testnet.bscscan.com"
+    : "https://sepolia.basescan.org";
 
   // ─── Wallet setup ────────────────────────────────────────────────────────────
 
@@ -1474,6 +1516,8 @@ export default function LpManager() {
                     : chainId === CHAIN.POLYGON     ? "#8247e5"
                     : chainId === CHAIN.BNB         ? "#f0b90b"
                     : chainId === CHAIN.BNB_TESTNET ? "#d97706"
+                    : chainId === CHAIN.ARB_SEPOLIA ? "#7c9eff"
+                    : chainId === CHAIN.OP_SEPOLIA  ? "#ff6b81"
                     : "#ef4444"
                   )}
                 >
