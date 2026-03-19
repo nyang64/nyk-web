@@ -84,11 +84,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li>
                     <NavLink to="/presale">Hashed Lierre Presale</NavLink>
                   </li>
-                  <li>
-                    <NavLink to="/purchase-crypto">Purchase Crypto</NavLink>
-                  </li>
                 </ul>
               )}
+            </li>
+            <li>
+              <NavLink to="/purchase-crypto">On/Off Ramp</NavLink>
             </li>
             <li>
               <NavLink to="/lp-manager">LP Manager</NavLink>

@@ -3,8 +3,8 @@ import type { Route } from "./+types/purchase-crypto";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Purchase Crypto | NYK Labs" },
-    { name: "description", content: "Buy cryptocurrency with MoonPay. Purchase ETH, BTC, USDC, USDT and more with credit card, bank transfer, or Apple Pay." },
+    { title: "On/Off Ramp | NYK Labs" },
+    { name: "description", content: "Most economic path to move fiat in and out of crypto. Bank ACH → CEX → USDC on Base → Aerodrome swap. Or use MoonPay for quick card purchases." },
   ];
 }
 
@@ -75,11 +75,117 @@ export default function PurchaseCrypto() {
   return (
     <main>
       <div className="card">
-        <h2>Purchase Crypto</h2>
-        <p style={{ marginBottom: '1.5rem' }}>
-          Buy or sell cryptocurrency securely with MoonPay. Use your credit card, bank transfer, or Apple Pay
-          to purchase USDC, USDT, ETH, BTC and more.
-        </p>
+        <h2>On / Off Ramp</h2>
+
+        {/* Most Economic Path Advisory */}
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.07)',
+          border: '1px solid rgba(16, 185, 129, 0.35)',
+          borderRadius: '10px',
+          padding: '1.25rem 1.5rem',
+          marginBottom: '2rem',
+        }}>
+          <h3 style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '1rem' }}>
+            Most Economic Path
+          </h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '1rem', lineHeight: '1.6' }}>
+            Credit card and instant-buy services charge 2–5% fees. The cheapest way to move fiat into
+            crypto — and back — is via the ACH route below. Fees are typically under 0.5% end-to-end.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {/* On-ramp */}
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 600, color: '#10b981', fontSize: '0.85rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                On-Ramp (Fiat → Crypto)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                {[
+                  { label: 'Bank (USD)', icon: '🏦' },
+                  { label: 'ACH Transfer', icon: '→', muted: true },
+                  { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
+                  { label: 'Convert to USDC', icon: '→', muted: true },
+                  { label: 'Withdraw via Base network', icon: '→', muted: true },
+                  { label: 'Self-Custody Wallet', icon: '👛' },
+                  { label: 'Aerodrome Swap → ETH', icon: '→', muted: true, link: 'https://aerodrome.finance/swap' },
+                ].map((step, i) =>
+                  step.muted ? (
+                    <span key={i} style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                      {step.link
+                        ? <a href={step.link} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'underline' }}>{step.label}</a>
+                        : step.label}
+                    </span>
+                  ) : (
+                    <span key={i} style={{
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {step.icon} {step.label}
+                    </span>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Off-ramp */}
+            <div>
+              <div style={{ fontWeight: 600, color: '#60a5fa', fontSize: '0.85rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Off-Ramp (Crypto → Fiat)
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
+                {[
+                  { label: 'Self-Custody Wallet', icon: '👛' },
+                  { label: 'Aerodrome Swap → USDC', icon: '→', muted: true, link: 'https://aerodrome.finance/swap' },
+                  { label: 'Withdraw to CEX via Base', icon: '→', muted: true },
+                  { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
+                  { label: 'ACH Transfer', icon: '→', muted: true },
+                  { label: 'Bank (USD)', icon: '🏦' },
+                ].map((step, i) =>
+                  step.muted ? (
+                    <span key={i} style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                      {step.link
+                        ? <a href={step.link} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>{step.label}</a>
+                        : step.label}
+                    </span>
+                  ) : (
+                    <span key={i} style={{
+                      background: 'rgba(96, 165, 250, 0.12)',
+                      border: '1px solid rgba(96, 165, 250, 0.3)',
+                      borderRadius: '6px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {step.icon} {step.label}
+                    </span>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '1rem', marginBottom: 0, lineHeight: '1.5' }}>
+            Use <strong style={{ color: 'var(--text)' }}>Base network</strong> when withdrawing from the CEX — it has the lowest withdrawal fees
+            among all EVM chains. Once USDC is in your wallet, swap to any token on{' '}
+            <a href="https://aerodrome.finance/swap" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981' }}>
+              Aerodrome Finance
+            </a>{' '}
+            for the best rates on Base.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+          <span style={{ fontSize: '0.8rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+            Quick option via MoonPay — for small amounts or credit / debit card
+          </span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+        </div>
 
         {/* Tab Navigation */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -318,12 +424,12 @@ export default function PurchaseCrypto() {
           borderRadius: '0 8px 8px 0',
         }}>
           <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '1rem' }}>
-            How It Works
+            About MoonPay
           </h3>
           <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: 0 }}>
-            Click the button to open the MoonPay widget. Complete your transaction
-            securely with MoonPay's trusted payment system. Once purchased, you can use
-            USDC or USDT to participate in the HLRR presale.
+            Click the button above to open the MoonPay widget. Accepts credit/debit card,
+            Apple Pay, Google Pay, and bank transfer in 150+ countries. Convenient for
+            small amounts or when you need crypto quickly — no CEX account required.
           </p>
         </div>
       </div>
