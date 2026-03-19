@@ -1485,16 +1485,6 @@ export default function LpManager() {
   return (
     <main style={{ padding: "3rem 1.5rem" }}>
       <div style={S.page}>
-        {/* Header */}
-        <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "1.8rem", color: "var(--accent)", fontWeight: 700 }}>
-            LP Position Creator
-          </h1>
-          <p style={{ color: "#9ca3af", marginTop: "0.4rem" }}>
-            Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across multiple networks
-          </p>
-        </div>
-
         {/* ── About / Documentation ─────────────────────────────────────────── */}
         <div style={{ ...S.card, marginBottom: "1.5rem" }}>
           <h2 style={{ fontSize: "1.1rem", color: "var(--accent)", fontWeight: 600, marginBottom: "0.75rem" }}>
@@ -1668,6 +1658,16 @@ export default function LpManager() {
           </div>
         </div>
         {/* ── End About ─────────────────────────────────────────────────────── */}
+
+        {/* Header */}
+        <div style={{ marginBottom: "1.25rem" }}>
+          <h1 style={{ fontSize: "1.8rem", color: "var(--accent)", fontWeight: 700 }}>
+            LP Position Creator
+          </h1>
+          <p style={{ color: "#9ca3af", marginTop: "0.4rem" }}>
+            Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across multiple networks
+          </p>
+        </div>
 
         {/* Wallet picker modal */}
         {showWalletPicker && (
