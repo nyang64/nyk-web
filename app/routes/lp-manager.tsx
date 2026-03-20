@@ -1541,11 +1541,13 @@ export default function LpManager() {
             Steps for LP Creation and Lock
           </h2>
           <ol style={{ color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.9", marginBottom: "1rem", paddingLeft: "1.25rem" }}>
-            <li><strong style={{ color: "var(--text)" }}>Configure</strong> — select network, protocol, fee tier, token pair, price range, and lock duration.</li>
-            <li><strong style={{ color: "var(--text)" }}>Approve</strong> — grant the position manager permission to spend your tokens.</li>
-            <li><strong style={{ color: "var(--text)" }}>Mint</strong> — the protocol creates (or reuses) the pool and mints a concentrated-liquidity NFT representing your position.</li>
-            <li><strong style={{ color: "var(--text)" }}>Lock</strong> — the NFT is transferred to the NYK Labs LP Vault, which records your ownership and unlock time. You keep collecting fees throughout.</li>
-            <li><strong style={{ color: "var(--text)" }}>Withdraw &amp; close</strong> — once the lock expires, withdraw the NFT and optionally close the position to reclaim both tokens.</li>
+            <li><strong style={{ color: "var(--text)" }}>Connect wallet</strong> — connect your wallet and switch it to the intended network before proceeding.</li>
+            <li><strong style={{ color: "var(--text)" }}>Configure</strong> — select protocol, fee tier, token pair, price range, starting price, and token amounts.</li>
+            <li><strong style={{ color: "var(--text)" }}>Approve tokens</strong> — grant the position manager permission to spend each token from your wallet.</li>
+            <li><strong style={{ color: "var(--text)" }}>Create LP &amp; mint NFT</strong> — the protocol creates the pool if it does not yet exist, deposits your tokens into the price range, and automatically mints a concentrated-liquidity NFT representing your position.</li>
+            <li><strong style={{ color: "var(--text)" }}>Select lock duration</strong> — choose how long to lock the position (the unlock timestamp is set once and cannot be shortened).</li>
+            <li><strong style={{ color: "var(--text)" }}>Approve &amp; lock NFT</strong> — approve the vault to receive the NFT, then transfer it to the NYK Labs LP Vault. The vault records your ownership and unlock time; you can still collect trading fees at any time during the lock.</li>
+            <li><strong style={{ color: "var(--text)" }}>Withdraw &amp; close</strong> — once the lock expires, withdraw the NFT from the vault and optionally close the position to reclaim both tokens.</li>
           </ol>
           <a href="/lp-vault-docs" style={{ color: "var(--accent)", fontSize: "0.88rem", textDecoration: "none" }}>
             About LP Vaults: deployed contracts, supported networks &amp; protocol docs →
