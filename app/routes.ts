@@ -14,4 +14,5 @@ export default [
   route("terms", "routes/terms.tsx"),
   route("puzzle", "routes/puzzle.tsx"),
   route("lp-manager", "routes/lp-manager.tsx"),
+  route("lp-vault-docs", "routes/lp-vault-docs.tsx"),
 ] satisfies RouteConfig;

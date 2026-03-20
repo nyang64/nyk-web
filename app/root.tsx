@@ -62,10 +62,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/product">Product</NavLink>
+              <NavLink to="/product">DeID Replicator</NavLink>
             </li>
             <li>
-              <NavLink to="/puzzle">Daily Puzzle</NavLink>
+              <NavLink to="/lp-manager">LP Manager</NavLink>
+            </li>
+            <li>
+              <NavLink to="/purchase-crypto">On/Off Ramp</NavLink>
             </li>
             <li
               className="dropdown"
@@ -88,10 +91,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               )}
             </li>
             <li>
-              <NavLink to="/purchase-crypto">On/Off Ramp</NavLink>
-            </li>
-            <li>
-              <NavLink to="/lp-manager">LP Manager</NavLink>
+              <NavLink to="/puzzle">Daily Puzzle</NavLink>
             </li>
             <li>
               <NavLink to="/faq">FAQ</NavLink>

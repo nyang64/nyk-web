@@ -19,6 +19,8 @@ export function meta({}: Route.MetaArgs) {
 // ─── Contract addresses ───────────────────────────────────────────────────────
 
 const CHAIN = {
+  ETH_MAINNET:  1,
+  ETH_SEPOLIA:  11155111,
   BASE_MAINNET: 8453,
   BASE_SEPOLIA: 84532,
   ARBITRUM:     42161,
@@ -38,6 +40,18 @@ const CHAIN_META: Record<number, {
   nativeCurrency: { name: string; symbol: string; decimals: number };
   blockExplorerUrls: string[];
 }> = {
+  [CHAIN.ETH_MAINNET]: {
+    chainName: "Ethereum Mainnet",
+    rpcUrls: ["https://mainnet.infura.io/v3/"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://etherscan.io"],
+  },
+  [CHAIN.ETH_SEPOLIA]: {
+    chainName: "Ethereum Sepolia",
+    rpcUrls: ["https://rpc.sepolia.org"],
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+  },
   [CHAIN.BASE_MAINNET]: {
     chainName: "Base",
     rpcUrls: ["https://mainnet.base.org"],
@@ -95,6 +109,14 @@ const CHAIN_META: Record<number, {
 };
 
 const UNISWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
+  [CHAIN.ETH_MAINNET]: {
+    factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+    nfpm: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",
+  },
+  [CHAIN.ETH_SEPOLIA]: {
+    factory: "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",
+    nfpm: "0x1238536071E1c677A632429e3655c799b22cDA52",
+  },
   [CHAIN.BASE_MAINNET]: {
     factory: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
     nfpm: "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1",
@@ -153,6 +175,8 @@ const NATIVE_SYMBOL: Partial<Record<number, string>> = {
 };
 
 const WETH_BY_CHAIN: Partial<Record<number, string>> = {
+  [CHAIN.ETH_MAINNET]:  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
+  [CHAIN.ETH_SEPOLIA]:  "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14", // WETH on Sepolia
   [CHAIN.BASE_MAINNET]: "0x4200000000000000000000000000000000000006",
   [CHAIN.BASE_SEPOLIA]: "0x4200000000000000000000000000000000000006",
   [CHAIN.ARBITRUM]:     "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
@@ -166,6 +190,15 @@ const WETH_BY_CHAIN: Partial<Record<number, string>> = {
 
 // PancakeSwap V3 uses the same factory + NFPM address across all supported chains
 const PANCAKESWAP_ADDRESSES: Record<number, { factory: string; nfpm: string }> = {
+  [CHAIN.ETH_MAINNET]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+  },
+  // NOTE: verify PancakeSwap V3 Sepolia addresses before use
+  [CHAIN.ETH_SEPOLIA]: {
+    factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+    nfpm: "0x427bF5b37357632377eCbEC9de3626C71A5396c1",
+  },
   [CHAIN.BASE_MAINNET]: {
     factory: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
     nfpm: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
@@ -195,6 +228,17 @@ interface WalletToken {
 
 // Seed list per chain — only tokens with a non-zero balance will appear in the picker
 const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
+  [CHAIN.ETH_MAINNET]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", symbol: "WETH", decimals: 18 },
+    { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 },
+    { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", decimals: 6 },
+  ],
+  [CHAIN.ETH_SEPOLIA]: [
+    { address: NATIVE_ETH_ADDRESS, symbol: "ETH", decimals: 18 },
+    { address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14", symbol: "WETH", decimals: 18 },
+    { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", decimals: 6 },
+  ],
   [CHAIN.BASE_MAINNET]: [
     { address: "0x5E1583d48bcFd60de77138ea195f3EFbe128405d", symbol: "HLRR", decimals: 8 },
     { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6 },
@@ -256,6 +300,8 @@ const KNOWN_TOKENS: Partial<Record<number, Omit<WalletToken, "balance">[]>> = {
 
 // Basescan/Arbiscan tokenlist API — covers full history in one call.
 const EXPLORER_API: Partial<Record<number, string>> = {
+  [CHAIN.ETH_MAINNET]:  "https://api.etherscan.io/api",
+  [CHAIN.ETH_SEPOLIA]:  "https://api-sepolia.etherscan.io/api",
   [CHAIN.BASE_MAINNET]: "https://api.basescan.org/api",
   [CHAIN.BASE_SEPOLIA]: "https://api-sepolia.basescan.org/api",
   [CHAIN.ARBITRUM]:     "https://api.arbiscan.io/api",
@@ -420,6 +466,8 @@ const LP_VAULT_ABI = [
 
 // Known vault deployments (LPVault contract)
 const VAULT_ADDRESSES: Partial<Record<number, string>> = {
+  [CHAIN.ETH_MAINNET]:  "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4",
+  [CHAIN.ETH_SEPOLIA]:  "0x17b64a028Ae5aF7B19b418739d9C46805c78ED54",
   [CHAIN.BASE_SEPOLIA]: "0x35b27228E96159E6c0A7921faC733C6aE06b86d1",
   [CHAIN.BASE_MAINNET]: "0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805",
   [CHAIN.ARBITRUM]:     "0x1B0c30f168D6Ef5F8203C915D191280e8Fe039Fa",
@@ -537,7 +585,7 @@ export default function LpManager() {
   const [txStatus, setTxStatus] = useState<TxStatus>({ type: "idle" });
 
   // Vault / lock state
-  const [vaultAddress, setVaultAddress] = useState<string>("");
+  const vaultAddress = chainId ? (VAULT_ADDRESSES[chainId] ?? "") : "";
   const [lockNfpm, setLockNfpm] = useState<string>("");
   const [lockTokenId, setLockTokenId] = useState<string>("");
   const [lockUnlockDate, setLockUnlockDate] = useState<string>("");
@@ -548,7 +596,9 @@ export default function LpManager() {
   // ─── Derived values ──────────────────────────────────────────────────────────
 
   const networkName =
-    chainId === CHAIN.BASE_MAINNET ? "Base Mainnet"
+    chainId === CHAIN.ETH_MAINNET   ? "Ethereum"
+    : chainId === CHAIN.ETH_SEPOLIA  ? "Eth Sepolia"
+    : chainId === CHAIN.BASE_MAINNET ? "Base Mainnet"
     : chainId === CHAIN.BASE_SEPOLIA ? "Base Sepolia"
     : chainId === CHAIN.ARBITRUM    ? "Arbitrum One"
     : chainId === CHAIN.ARB_SEPOLIA ? "Arbitrum Sepolia"
@@ -556,11 +606,12 @@ export default function LpManager() {
     : chainId === CHAIN.OP_SEPOLIA  ? "OP Sepolia"
     : chainId === CHAIN.POLYGON     ? "Polygon"
     : chainId === CHAIN.BNB         ? "BNB Chain"
+    : chainId === CHAIN.BNB_TESTNET ? "BNB Testnet"
     : chainId !== null              ? "Unsupported Network"
     : null;
 
   const isSupported = chainId !== null &&
-    (chainId in UNISWAP_ADDRESSES || chainId in PANCAKESWAP_ADDRESSES);
+    (chainId in UNISWAP_ADDRESSES || chainId in PANCAKESWAP_ADDRESSES || chainId in SLIPSTREAM_ADDRESSES);
 
   // Slipstream protocols are only available on chains that have a SLIPSTREAM_ADDRESSES entry
   const isSlipstreamUnsupported = isSlipstream(protocol) && !(chainId !== null && chainId in SLIPSTREAM_ADDRESSES);
@@ -645,7 +696,9 @@ export default function LpManager() {
   })();
 
   const basescanBase =
-    chainId === CHAIN.BASE_MAINNET  ? "https://basescan.org"
+    chainId === CHAIN.ETH_MAINNET   ? "https://etherscan.io"
+    : chainId === CHAIN.ETH_SEPOLIA  ? "https://sepolia.etherscan.io"
+    : chainId === CHAIN.BASE_MAINNET  ? "https://basescan.org"
     : chainId === CHAIN.BASE_SEPOLIA  ? "https://sepolia.basescan.org"
     : chainId === CHAIN.ARBITRUM      ? "https://arbiscan.io"
     : chainId === CHAIN.ARB_SEPOLIA   ? "https://sepolia.arbiscan.io"
@@ -690,11 +743,8 @@ export default function LpManager() {
     if (protocol === "uniswap" && !(chainId in UNISWAP_ADDRESSES) && chainId in PANCAKESWAP_ADDRESSES) setProtocol("pancakeswap");
   }, [chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-populate vault address and lock NFPM when chain / protocol changes
+  // Auto-populate lock NFPM when chain / protocol changes
   useEffect(() => {
-    if (chainId) {
-      setVaultAddress(VAULT_ADDRESSES[chainId] ?? "");
-    }
     if (chainId && protocol) {
       const nfpmAddr =
         isSlipstream(protocol)
@@ -1488,175 +1538,35 @@ export default function LpManager() {
         {/* ── About / Documentation ─────────────────────────────────────────── */}
         <div style={{ ...S.card, marginBottom: "1.5rem" }}>
           <h2 style={{ fontSize: "1.1rem", color: "var(--accent)", fontWeight: 600, marginBottom: "0.75rem" }}>
-            About NYK Labs LP Vaults
+            Steps for LP Creation and Lock
           </h2>
-          <p style={{ color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.7", marginBottom: "1rem" }}>
-            NYK Labs LP Vaults are non-custodial smart contracts that accept a Uniswap V3-style NFT position
-            and lock it for a configurable duration. During the lock period the original owner can still collect
-            trading fees at any time; only the NFT itself (representing the liquidity) is held by the vault until
-            the unlock time passes. This design lets protocols and teams demonstrate long-term liquidity commitment
-            without surrendering fee revenue.
-          </p>
-
-          {/* Vault deployments */}
-          <h3 style={{ fontSize: "0.95rem", color: "var(--text)", fontWeight: 600, marginBottom: "0.6rem" }}>
-            Deployed Vault Contracts
-          </h3>
-          <div style={{ overflowX: "auto", marginBottom: "1.25rem" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                  {["Network", "Chain ID", "Contract Address", "Source"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.75rem", color: "var(--muted)", fontWeight: 500 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {([
-                  { net: "Base Mainnet",       chainId: 8453,     addr: "0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805", explorer: "https://basescan.org",          sourcify: "https://repo.sourcify.dev/contracts/full_match/8453/0x5AA450B8fE52eD43455a3Cd7cACe01e086AF3805/" },
-                  { net: "Base Sepolia",        chainId: 84532,    addr: "0x35b27228E96159E6c0A7921faC733C6aE06b86d1", explorer: "https://sepolia.basescan.org",  sourcify: "https://repo.sourcify.dev/contracts/full_match/84532/0x35b27228E96159E6c0A7921faC733C6aE06b86d1/" },
-                  { net: "Arbitrum One",        chainId: 42161,    addr: "0x1B0c30f168D6Ef5F8203C915D191280e8Fe039Fa", explorer: "https://arbiscan.io",           sourcify: "https://repo.sourcify.dev/contracts/full_match/42161/0x1B0c30f168D6Ef5F8203C915D191280e8Fe039Fa/" },
-                  { net: "Arbitrum Sepolia",    chainId: 421614,   addr: "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4", explorer: "https://sepolia.arbiscan.io",   sourcify: "https://repo.sourcify.dev/contracts/full_match/421614/0x5028410b2a9dDF94b36aF1124a3393f96873e1e4/" },
-                  { net: "OP Mainnet",          chainId: 10,       addr: "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4", explorer: "https://optimistic.etherscan.io", sourcify: "https://repo.sourcify.dev/contracts/full_match/10/0x5028410b2a9dDF94b36aF1124a3393f96873e1e4/" },
-                  { net: "OP Sepolia",          chainId: 11155420, addr: "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4", explorer: "https://sepolia-optimistic.etherscan.io", sourcify: "https://repo.sourcify.dev/contracts/full_match/11155420/0x5028410b2a9dDF94b36aF1124a3393f96873e1e4/" },
-                  { net: "BNB Chain",           chainId: 56,       addr: "0x27e99baA94E143E17A4Ec09334639329eEA901bb", explorer: "https://bscscan.com",           sourcify: "https://repo.sourcify.dev/contracts/full_match/56/0x27e99baA94E143E17A4Ec09334639329eEA901bb/" },
-                  { net: "BNB Testnet",         chainId: 97,       addr: "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4", explorer: "https://testnet.bscscan.com",   sourcify: "https://repo.sourcify.dev/contracts/full_match/97/0x5028410b2a9dDF94b36aF1124a3393f96873e1e4/" },
-                  { net: "Polygon",             chainId: 137,      addr: "0x5028410b2a9dDF94b36aF1124a3393f96873e1e4", explorer: "https://polygonscan.com",       sourcify: "https://repo.sourcify.dev/contracts/full_match/137/0x5028410b2a9dDF94b36aF1124a3393f96873e1e4/" },
-                ] as { net: string; chainId: number; addr: string; explorer: string; sourcify: string }[]).map(({ net, chainId, addr, explorer, sourcify }) => (
-                  <tr key={chainId} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "0.45rem 0.75rem", color: "var(--text)" }}>{net}</td>
-                    <td style={{ padding: "0.45rem 0.75rem", color: "var(--muted)" }}>{chainId}</td>
-                    <td style={{ padding: "0.45rem 0.75rem", fontFamily: "monospace" }}>
-                      <a href={`${explorer}/address/${addr}`} target="_blank" rel="noopener noreferrer"
-                        style={{ color: "var(--accent)", textDecoration: "none", wordBreak: "break-all" }}>
-                        {addr}
-                      </a>
-                    </td>
-                    <td style={{ padding: "0.45rem 0.75rem" }}>
-                      <a href={sourcify} target="_blank" rel="noopener noreferrer"
-                        style={{ color: "#a78bfa", textDecoration: "none", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
-                        Sourcify ↗
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Network / Protocol support */}
-          <h3 style={{ fontSize: "0.95rem", color: "var(--text)", fontWeight: 600, marginBottom: "0.6rem" }}>
-            Supported Networks &amp; Protocols
-          </h3>
-          <div style={{ overflowX: "auto", marginBottom: "1.25rem" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                  {["Network", "Uniswap V3", "PancakeSwap V3", "Aerodrome", "Velodrome"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "0.4rem 0.75rem", color: "var(--muted)", fontWeight: 500 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {([
-                  { net: "Base Mainnet",    uni: true,  pcs: true,  aero: true,  velo: false },
-                  { net: "Base Sepolia",    uni: true,  pcs: false, aero: false, velo: false },
-                  { net: "Arbitrum One",    uni: true,  pcs: true,  aero: false, velo: false },
-                  { net: "Arbitrum Sepolia",uni: true,  pcs: false, aero: false, velo: false },
-                  { net: "OP Mainnet",      uni: true,  pcs: false, aero: false, velo: true  },
-                  { net: "OP Sepolia",      uni: true,  pcs: false, aero: false, velo: false },
-                  { net: "Polygon",         uni: true,  pcs: false, aero: false, velo: false },
-                  { net: "BNB Chain",       uni: true,  pcs: true,  aero: false, velo: false },
-                  { net: "BNB Testnet",     uni: false, pcs: true,  aero: false, velo: false },
-                ] as { net: string; uni: boolean; pcs: boolean; aero: boolean; velo: boolean }[]).map(({ net, uni, pcs, aero, velo }) => {
-                  const tick = (v: boolean) => v
-                    ? <span style={{ color: "#10b981" }}>✓</span>
-                    : <span style={{ color: "rgba(255,255,255,0.15)" }}>—</span>;
-                  return (
-                    <tr key={net} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                      <td style={{ padding: "0.45rem 0.75rem", color: "var(--text)" }}>{net}</td>
-                      <td style={{ padding: "0.45rem 0.75rem" }}>{tick(uni)}</td>
-                      <td style={{ padding: "0.45rem 0.75rem" }}>{tick(pcs)}</td>
-                      <td style={{ padding: "0.45rem 0.75rem" }}>{tick(aero)}</td>
-                      <td style={{ padding: "0.45rem 0.75rem" }}>{tick(velo)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Protocol initialization */}
-          <h3 style={{ fontSize: "0.95rem", color: "var(--text)", fontWeight: 600, marginBottom: "0.75rem" }}>
-            How Pools &amp; Positions Are Initialized
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.88rem", color: "#9ca3af", lineHeight: "1.65" }}>
-
-            <div style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Uniswap V3 &amp; PancakeSwap V3</div>
-              <p style={{ margin: 0 }}>
-                Both protocols identify a pool by <strong style={{ color: "var(--text)" }}>token pair + fee tier</strong>.
-                Available fee tiers are <code style={{ color: "var(--accent)" }}>0.01%</code>, <code style={{ color: "var(--accent)" }}>0.05%</code>,{" "}
-                <code style={{ color: "var(--accent)" }}>0.3%</code>, and <code style={{ color: "var(--accent)" }}>1%</code> — each is a separate pool.
-                When a pool does not yet exist it is created and seeded with a <strong style={{ color: "var(--text)" }}>starting price</strong> (encoded as
-                a square-root price in Q64.96 fixed-point format). A position is then minted by specifying a{" "}
-                <strong style={{ color: "var(--text)" }}>lower and upper tick</strong> (the price range) plus the desired token amounts.
-                The protocol deposits the exact ratio demanded by the range; any surplus of one token is returned to the caller.
-                Tokens are transferred from the connected wallet directly into the pool — no intermediate custody.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Aerodrome Slipstream (Base) &amp; Velodrome Slipstream (OP)</div>
-              <p style={{ margin: 0 }}>
-                Slipstream pools are identified by <strong style={{ color: "var(--text)" }}>token pair + tick spacing</strong> instead of a fee tier.
-                Common tick spacings are <code style={{ color: "#a78bfa)" }}>1</code>, <code style={{ color: "#a78bfa" }}>50</code>,{" "}
-                <code style={{ color: "#a78bfa" }}>100</code>, and <code style={{ color: "#a78bfa" }}>200</code> — tighter spacing allows
-                narrower ranges and higher capital efficiency but costs more gas to cross ticks.
-                Pool creation and position minting are combined into a single <code style={{ color: "#a78bfa" }}>mint()</code> call that
-                accepts a <code style={{ color: "#a78bfa" }}>sqrtPriceX96</code> parameter; if the pool already exists the price parameter
-                is ignored. After minting, the LP NFT can be staked into the protocol's gauge to earn{" "}
-                <strong style={{ color: "var(--text)" }}>AERO / VELO emissions</strong> and bribe rewards.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Vault Lock &amp; Close Flow</div>
-              <p style={{ marginBottom: "0.6rem" }}>
-                After a position NFT is minted it is <strong style={{ color: "var(--text)" }}>approved and transferred</strong> to the
-                NYK Labs LP Vault contract via <code style={{ color: "#10b981" }}>createLock(manager, tokenId, unlockTime)</code>.
-                The vault records the owner, the position manager address, and the unlock timestamp.
-                During the lock the owner may call <code style={{ color: "#10b981" }}>collectFees()</code> to harvest accrued trading fees
-                at any time. Once the unlock time has passed, <code style={{ color: "#10b981" }}>withdrawNFT()</code> returns the NFT to
-                the original owner who can then close, migrate, or re-lock the position as desired.
-              </p>
-              <p style={{ margin: 0 }}>
-                The <strong style={{ color: "var(--text)" }}>"Close Position" button</strong> (visible on each locked position card once the vault lock expires and the NFT is withdrawn) executes a multi-step process:{" "}
-                (1) <code style={{ color: "#10b981" }}>decreaseLiquidity()</code> removes all liquidity from the tick range and credits
-                the owed token amounts to the position;{" "}
-                (2) <code style={{ color: "#10b981" }}>collect()</code> transfers those token amounts plus any uncollected fees to the
-                owner's wallet;{" "}
-                (3) <code style={{ color: "#10b981" }}>burn()</code> destroys the now-empty NFT. All three calls are batched into a
-                single <code style={{ color: "#10b981" }}>multicall()</code> transaction to save gas. The two underlying tokens are
-                returned directly to the connected wallet — no intermediary custody at any step.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Wallet Requirement for LP Creation</div>
-              <p style={{ margin: 0 }}>
-                Both tokens of the pair must be held in the <strong style={{ color: "var(--text)" }}>same connected wallet account</strong> at
-                the time of LP creation. The LP Manager reads balances and requests token approvals from whichever account is currently
-                connected — it cannot pull funds from a different account. If your two tokens are split across accounts, transfer them
-                to a single account first, or switch accounts in your wallet before connecting. Use the{" "}
-                <strong style={{ color: "var(--text)" }}>disconnect / reconnect</strong> button in the wallet bar above to switch to the
-                correct account.
-              </p>
-            </div>
-
-          </div>
+          <ol style={{ color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.9", marginBottom: "1rem", paddingLeft: "1.25rem" }}>
+            <li><strong style={{ color: "var(--text)" }}>Configure</strong> — select network, protocol, fee tier, token pair, price range, and lock duration.</li>
+            <li><strong style={{ color: "var(--text)" }}>Approve</strong> — grant the position manager permission to spend your tokens.</li>
+            <li><strong style={{ color: "var(--text)" }}>Mint</strong> — the protocol creates (or reuses) the pool and mints a concentrated-liquidity NFT representing your position.</li>
+            <li><strong style={{ color: "var(--text)" }}>Lock</strong> — the NFT is transferred to the NYK Labs LP Vault, which records your ownership and unlock time. You keep collecting fees throughout.</li>
+            <li><strong style={{ color: "var(--text)" }}>Withdraw &amp; close</strong> — once the lock expires, withdraw the NFT and optionally close the position to reclaim both tokens.</li>
+          </ol>
+          <a href="/lp-vault-docs" style={{ color: "var(--accent)", fontSize: "0.88rem", textDecoration: "none" }}>
+            About LP Vaults: deployed contracts, supported networks &amp; protocol docs →
+          </a>
         </div>
-        {/* ── End About ─────────────────────────────────────────────────────── */}
+        {/* Starting price warning */}
+        <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "8px", padding: "0.9rem 1.1rem", marginBottom: "1.5rem", fontSize: "0.88rem", color: "#9ca3af", lineHeight: "1.65" }}>
+          <div style={{ fontWeight: 600, color: "#f87171", marginBottom: "0.35rem" }}>⚠ Starting Price Must Match Across Pools for the Same Pair</div>
+          <p style={{ margin: 0 }}>
+            The starting price only matters when a pool is being <strong style={{ color: "var(--text)" }}>created for the first time</strong>.
+            Once a pool exists, subsequent positions in that pool ignore the starting price field entirely.
+            However, if you deploy the same token pair across <strong style={{ color: "var(--text)" }}>multiple pools</strong> — for example
+            the same pair at different fee tiers, on different protocols, or on different chains — each pool's starting price must
+            reflect the <strong style={{ color: "var(--text)" }}>same real-world market price</strong>.
+            Any discrepancy between pools creates an instant arbitrage opportunity: bots will drain
+            the cheaper pool by buying tokens at the mispriced rate and selling them into the correctly priced pool,
+            extracting value directly from your deposited liquidity until the prices converge.
+            Different positions within the <em>same</em> pool can have different price ranges without this risk,
+            because they all share the same pool price.
+          </p>
+        </div>
 
         {/* Header */}
         <div style={{ marginBottom: "1.25rem" }}>
@@ -1684,7 +1594,9 @@ export default function LpManager() {
               <>
                 <span
                   style={S.badge(
-                    chainId === CHAIN.BASE_MAINNET ? "#22d3ee"
+                    chainId === CHAIN.ETH_MAINNET   ? "#627eea"
+                    : chainId === CHAIN.ETH_SEPOLIA  ? "#a78bfa"
+                    : chainId === CHAIN.BASE_MAINNET ? "#22d3ee"
                     : chainId === CHAIN.BASE_SEPOLIA ? "#a78bfa"
                     : chainId === CHAIN.ARBITRUM    ? "#f59e0b"
                     : chainId === CHAIN.OPTIMISM    ? "#ff0420"
@@ -1733,14 +1645,18 @@ export default function LpManager() {
                     marginBottom: 0,
                   }}
                 >
+                  <option value={CHAIN.ETH_MAINNET}>Ethereum</option>
+                  <option value={CHAIN.ETH_SEPOLIA}>Eth Sepolia</option>
                   <option value={CHAIN.BASE_MAINNET}>Base Mainnet</option>
-                  <option value={CHAIN.ARBITRUM}>Arbitrum One</option>
-                  <option value={CHAIN.OPTIMISM}>OP Mainnet</option>
-                  <option value={CHAIN.POLYGON}>Polygon</option>
-                  <option value={CHAIN.BNB}>BNB Chain</option>
                   <option value={CHAIN.BASE_SEPOLIA}>Base Sepolia</option>
+                  <option value={CHAIN.ARBITRUM}>Arbitrum One</option>
+                  <option value={CHAIN.ARB_SEPOLIA}>Arb Sepolia</option>
+                  <option value={CHAIN.OPTIMISM}>OP Mainnet</option>
+                  <option value={CHAIN.OP_SEPOLIA}>OP Sepolia</option>
+                  <option value={CHAIN.BNB}>BNB Chain</option>
                   <option value={CHAIN.BNB_TESTNET}>BNB Testnet</option>
-                  {chainId !== null && !isSupported && chainId !== CHAIN.BASE_SEPOLIA && chainId !== CHAIN.BNB_TESTNET && (
+                  <option value={CHAIN.POLYGON}>Polygon</option>
+                  {chainId !== null && !isSupported && (
                     <option value={chainId}>Unknown ({chainId})</option>
                   )}
                 </select>
@@ -1771,22 +1687,7 @@ export default function LpManager() {
         {/* Unsupported network warning */}
         {connectedAddress && !isSupported && (
           <div className="error-message" style={{ marginBottom: "1.25rem" }}>
-            <div>Unsupported network. Switch to a supported network:</div>
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
-              {[
-                { label: "Base Mainnet", id: CHAIN.BASE_MAINNET },
-                { label: "Arbitrum One", id: CHAIN.ARBITRUM },
-                { label: "Base Sepolia", id: CHAIN.BASE_SEPOLIA },
-              ].map(({ label, id }) => (
-                <button
-                  key={id}
-                  onClick={() => walletSwitchNetwork(id).catch(() => {})}
-                  style={{ ...S.btn, width: "auto", padding: "0.3rem 0.8rem", fontSize: "0.8rem", marginTop: 0 }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <div>Your wallet is connected to an unsupported network. Please switch your wallet to one of the supported networks: Ethereum, Eth Sepolia, Base Mainnet, Arbitrum One, OP Mainnet, Polygon, BNB Chain, Base Sepolia, or BNB Testnet.</div>
           </div>
         )}
 
@@ -2183,17 +2084,9 @@ export default function LpManager() {
           {/* Vault address */}
           <div style={{ marginBottom: "1.25rem" }}>
             <label style={S.label}>Vault Contract Address</label>
-            <input
-              style={S.input}
-              value={vaultAddress}
-              onChange={(e) => setVaultAddress(e.target.value)}
-              placeholder="0x...  (deploy LPVault.sol and paste address)"
-            />
-            {!vaultAddress && (
-              <div style={{ fontSize: "0.78rem", color: "#f59e0b", marginTop: "0.3rem" }}>
-                LPVault not deployed on this network yet — deploy contracts/LPTimeLock.sol first.
-              </div>
-            )}
+            <div style={{ ...S.input, color: vaultAddress ? "#e5e7eb" : "#6b7280", wordBreak: "break-all" }}>
+              {vaultAddress || "Not available on this network"}
+            </div>
           </div>
 
           <button
@@ -2257,7 +2150,7 @@ export default function LpManager() {
           </div>
 
           {!vaultAddress && (
-            <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Enter a vault address above to view locks.</div>
+            <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Connect wallet and select a supported network to view locks.</div>
           )}
 
           {vaultAddress && !connectedAddress && (

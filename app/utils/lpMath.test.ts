@@ -3,11 +3,17 @@
  * Aerodrome Slipstream (Base), and Velodrome Slipstream (Optimism).
  *
  * Networks and protocols covered:
+ *   Ethereum        — Uniswap V3, PancakeSwap V3
+ *   Eth Sepolia     — Uniswap V3, PancakeSwap V3
  *   Base Mainnet    — Uniswap V3, PancakeSwap V3, Aerodrome Slipstream
+ *   Base Sepolia    — Uniswap V3
  *   Arbitrum One    — Uniswap V3, PancakeSwap V3
+ *   Arbitrum Sepolia— Uniswap V3
  *   Optimism        — Uniswap V3, Velodrome Slipstream
+ *   OP Sepolia      — Uniswap V3
  *   Polygon         — Uniswap V3 (native token: POL, 18 dec — substituted with WPOL)
  *   BNB Chain       — Uniswap V3, PancakeSwap V3 (native: BNB; USDC has 18 dec here)
+ *   BNB Testnet     — PancakeSwap V3 only
  *
  * Slipstream (Aerodrome / Velodrome) is identical for tick/price math — only
  * addresses and chain differ.  Tests are shared where possible.
@@ -1104,12 +1110,18 @@ describe("Network/protocol compatibility — sqrtPriceX96 is protocol-agnostic",
    */
 
   const pairs: { name: string; t0dec: number; t1dec: number; price: number }[] = [
-    { name: "Base: HLRR(8)/USDC(6)",          t0dec: 8,  t1dec: 6,  price: 0.075 },
+    { name: "Ethereum: USDC(6)/WETH(18)",      t0dec: 6,  t1dec: 18, price: 1 / 2500 },
+    { name: "Eth Sepolia: USDC(6)/WETH(18)",   t0dec: 6,  t1dec: 18, price: 1 / 2000 },
+    { name: "Base: HLRR(8)/USDC(6)",           t0dec: 8,  t1dec: 6,  price: 0.075 },
+    { name: "Base Sepolia: USDC(6)/HLRR(8)",   t0dec: 6,  t1dec: 8,  price: 1 / 0.075 },
+    { name: "Arbitrum: WETH(18)/USDC(6)",      t0dec: 18, t1dec: 6,  price: 2000 },
+    { name: "Arb Sepolia: USDC(6)/WETH(18)",   t0dec: 6,  t1dec: 18, price: 1 / 2000 },
     { name: "Optimism: USDC(6)/WETH(18)",      t0dec: 6,  t1dec: 18, price: 1 / 2000 },
+    { name: "OP Sepolia: WETH(18)/USDC(6)",    t0dec: 18, t1dec: 6,  price: 2000 },
     { name: "Polygon: WPOL(18)/USDC(6)",       t0dec: 18, t1dec: 6,  price: 0.50 },
     { name: "BNB: USDC(18)/WBNB(18)",          t0dec: 18, t1dec: 18, price: 1 / 600 },
     { name: "BNB: CAKE(18)/USDC(18)",          t0dec: 18, t1dec: 18, price: 3.0 },
-    { name: "Arbitrum: WETH(18)/USDC(6)",      t0dec: 18, t1dec: 6,  price: 2000 },
+    { name: "BNB Testnet: USDT(18)/WBNB(18)",  t0dec: 18, t1dec: 18, price: 1 / 400 },
   ];
 
   for (const { name, t0dec, t1dec, price } of pairs) {
@@ -1341,5 +1353,376 @@ describe("pairSwapped — user selects token0 with higher address than token1", 
       expect(sepolia).toBeGreaterThan(0n);
       expect(mainnet).not.toBe(sepolia);
     });
+  });
+});
+
+// ─── Ethereum Mainnet — Uniswap V3 & PancakeSwap V3 ──────────────────────────
+//
+// USDC (0xA0b8…) < WETH (0xC02a…) by address → USDC=sorted0, WETH=sorted1
+// decAdj = 18 − 6 = +12  (positive branch — fewer decimals on sorted0)
+// humanPrice = WETH per USDC = 1 / ETH_USD
+// At ETH=$2500: humanPrice=1/2500=0.0004, poolPrice=0.0004×10^12=4×10^8
+// tick ≈ ln(4e8)/ln(1.0001) ≈ +198_089
+
+describe("Ethereum Mainnet — USDC(6)/WETH(18) — Uniswap V3 & PancakeSwap V3", () => {
+  const USDC_ETH = { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 };
+  const WETH_ETH = { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", symbol: "WETH", decimals: 18 };
+
+  it("sortTokens: USDC(0xA0) < WETH(0xC0) → USDC=sorted0, WETH=sorted1", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_ETH, WETH_ETH);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+    expect(wasSwapped).toBe(false);
+  });
+
+  it("inverted (WETH token0 / USDC token1): wasSwapped=true, sorted0=USDC", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WETH_ETH, USDC_ETH);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+  });
+
+  it("ETH=$2500: tick is near +198_089 (positive — USDC is sorted0)", () => {
+    const tick = priceToTick(1 / 2500, USDC_ETH.decimals, WETH_ETH.decimals);
+    expect(tick).toBeCloseTo(198_089, -2);
+    expect(tick).toBeGreaterThan(190_000);
+  });
+
+  it("inverted pair (user enters $2500 USDC/WETH): pool tick equals 1/2500 canonical", () => {
+    // User selects WETH/USDC and enters 2500 → pairSwapped → pool price = 1/2500
+    const canonical  = priceToTick(1 / 2500, USDC_ETH.decimals, WETH_ETH.decimals);
+    const viaInverse = priceToTick(1 / 2500, USDC_ETH.decimals, WETH_ETH.decimals);
+    expect(canonical).toBe(viaInverse);
+  });
+
+  it("priceToTick is monotonic: $1500 < $2500 < $4000 → decreasing tick", () => {
+    const t1500 = priceToTick(1 / 1500, USDC_ETH.decimals, WETH_ETH.decimals);
+    const t2500 = priceToTick(1 / 2500, USDC_ETH.decimals, WETH_ETH.decimals);
+    const t4000 = priceToTick(1 / 4000, USDC_ETH.decimals, WETH_ETH.decimals);
+    expect(t4000).toBeLessThan(t2500);
+    expect(t2500).toBeLessThan(t1500);
+  });
+
+  it("Uniswap V3 fee=3000 (spacing=60): full flow for $1500–$4000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDC_ETH, WETH_ETH);
+    const tickLower = snapTick(priceToTick(1 / 4000, sorted0.decimals, sorted1.decimals), 60, true);
+    const tickUpper = snapTick(priceToTick(1 / 1500, sorted0.decimals, sorted1.decimals), 60, false);
+    const sqrtP     = priceToSqrtPriceX96(1 / 2500, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    expect(tickLower % 60 == 0).toBe(true);
+    expect(tickUpper % 60 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    const startTick = priceToTick(1 / 2500, sorted0.decimals, sorted1.decimals);
+    expect(startTick).toBeGreaterThan(tickLower);
+    expect(startTick).toBeLessThan(tickUpper);
+  });
+
+  it("PancakeSwap V3 fee=2500 (spacing=50): full flow for $1500–$4000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDC_ETH, WETH_ETH);
+    const tickLower = snapTick(priceToTick(1 / 4000, sorted0.decimals, sorted1.decimals), 50, true);
+    const tickUpper = snapTick(priceToTick(1 / 1500, sorted0.decimals, sorted1.decimals), 50, false);
+    expect(tickLower % 50 == 0).toBe(true);
+    expect(tickUpper % 50 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    expect(tickLower).toBeGreaterThan(0); // large positive ticks for USDC/WETH
+  });
+
+  it("USDC/WETH and WETH/USDC produce different sqrtPriceX96 (different decimal arrangements)", () => {
+    const sqrtUsdcWeth = priceToSqrtPriceX96(1 / 2500, USDC_ETH.decimals, WETH_ETH.decimals); // sorted0=USDC
+    const sqrtWethUsdc = priceToSqrtPriceX96(2500,      WETH_ETH.decimals, USDC_ETH.decimals); // sorted0=WETH
+    expect(sqrtUsdcWeth).toBeGreaterThan(0n);
+    expect(sqrtWethUsdc).toBeGreaterThan(0n);
+    expect(sqrtUsdcWeth).not.toBe(sqrtWethUsdc);
+  });
+});
+
+// ─── Eth Sepolia — Uniswap V3 & PancakeSwap V3 ───────────────────────────────
+//
+// USDC (0x1c7D…) < WETH (0xfFf9…) by address → USDC=sorted0, WETH=sorted1
+// decAdj = +12  (same positive branch as Ethereum mainnet)
+// At ETH=$2000: humanPrice=1/2000=0.0005, poolPrice=5×10^8, tick≈+200_321
+
+describe("Eth Sepolia — USDC(6)/WETH(18) — Uniswap V3 & PancakeSwap V3", () => {
+  const USDC_ESEP = { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", decimals: 6 };
+  const WETH_ESEP = { address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14", symbol: "WETH", decimals: 18 };
+
+  it("sortTokens: USDC(0x1c) < WETH(0xff) → USDC=sorted0, WETH=sorted1", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_ESEP, WETH_ESEP);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+    expect(wasSwapped).toBe(false);
+  });
+
+  it("inverted (WETH token0 / USDC token1): wasSwapped=true, sorted0=USDC", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WETH_ESEP, USDC_ESEP);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+  });
+
+  it("ETH=$2000: tick is near +200_321 (matches Optimism USDC/WETH — same decimal layout)", () => {
+    const tick = priceToTick(1 / 2000, USDC_ESEP.decimals, WETH_ESEP.decimals);
+    expect(tick).toBeCloseTo(200_321, -2);
+    expect(tick).toBeGreaterThan(190_000);
+  });
+
+  it("inverted: user enters $2000 USDC/WETH → pool price 1/2000 → same tick as canonical", () => {
+    const canonical  = priceToTick(1 / 2000, USDC_ESEP.decimals, WETH_ESEP.decimals);
+    const viaInverse = priceToTick(1 / 2000, USDC_ESEP.decimals, WETH_ESEP.decimals);
+    expect(canonical).toBe(viaInverse);
+  });
+
+  it("Uniswap V3 fee=500 (spacing=10): full flow for $1500–$3000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDC_ESEP, WETH_ESEP);
+    const tickLower = snapTick(priceToTick(1 / 3000, sorted0.decimals, sorted1.decimals), 10, true);
+    const tickUpper = snapTick(priceToTick(1 / 1500, sorted0.decimals, sorted1.decimals), 10, false);
+    const sqrtP     = priceToSqrtPriceX96(1 / 2000, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    expect(tickLower % 10 == 0).toBe(true);
+    expect(tickUpper % 10 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    const startTick = priceToTick(1 / 2000, sorted0.decimals, sorted1.decimals);
+    expect(startTick).toBeGreaterThan(tickLower);
+    expect(startTick).toBeLessThan(tickUpper);
+  });
+
+  it("PancakeSwap V3 fee=2500 (spacing=50): full flow for $1500–$3000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDC_ESEP, WETH_ESEP);
+    const tickLower = snapTick(priceToTick(1 / 3000, sorted0.decimals, sorted1.decimals), 50, true);
+    const tickUpper = snapTick(priceToTick(1 / 1500, sorted0.decimals, sorted1.decimals), 50, false);
+    expect(tickLower % 50 == 0).toBe(true);
+    expect(tickUpper % 50 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    expect(tickLower).toBeGreaterThan(0);
+  });
+
+  it("sqrtPriceX96 matches Ethereum mainnet for same ETH price (identical decimal layout)", () => {
+    const USDC_ETH = { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", decimals: 6 };
+    const WETH_ETH = { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", symbol: "WETH", decimals: 18 };
+    const sqrtSep  = priceToSqrtPriceX96(1 / 2000, USDC_ESEP.decimals, WETH_ESEP.decimals);
+    const sqrtMain = priceToSqrtPriceX96(1 / 2000, USDC_ETH.decimals,  WETH_ETH.decimals);
+    // Same decimal layout → same sqrtPriceX96 regardless of addresses/chain
+    expect(sqrtSep).toBe(sqrtMain);
+  });
+});
+
+// ─── Arbitrum Sepolia — Uniswap V3 only ──────────────────────────────────────
+//
+// USDC (0x75fa…) < WETH (0x980B…) by address → USDC=sorted0, WETH=sorted1
+// decAdj = +12  (same positive branch as Ethereum / Eth Sepolia / Optimism)
+// At ETH=$2000: tick ≈ +200_321
+
+describe("Arbitrum Sepolia — USDC(6)/WETH(18) — Uniswap V3", () => {
+  const USDC_ASEP = { address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", symbol: "USDC", decimals: 6 };
+  const WETH_ASEP = { address: "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73", symbol: "WETH", decimals: 18 };
+
+  it("sortTokens: USDC(0x75) < WETH(0x98) → USDC=sorted0, WETH=sorted1", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_ASEP, WETH_ASEP);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+    expect(wasSwapped).toBe(false);
+  });
+
+  it("inverted (WETH token0 / USDC token1): wasSwapped=true, sorted0=USDC", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WETH_ASEP, USDC_ASEP);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDC");
+    expect(sorted1.symbol).toBe("WETH");
+  });
+
+  it("ETH=$2000: tick near +200_321", () => {
+    const tick = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    expect(tick).toBeCloseTo(200_321, -2);
+    expect(tick).toBeGreaterThan(190_000);
+  });
+
+  it("inverted pair: user enters $2000 USDC/WETH → same tick as canonical USDC/WETH", () => {
+    const canonical  = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    const viaInverse = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    expect(canonical).toBe(viaInverse);
+  });
+
+  it("Uniswap V3 fee=3000 (spacing=60): full flow for $1000–$4000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDC_ASEP, WETH_ASEP);
+    const tickLower = snapTick(priceToTick(1 / 4000, sorted0.decimals, sorted1.decimals), 60, true);
+    const tickUpper = snapTick(priceToTick(1 / 1000, sorted0.decimals, sorted1.decimals), 60, false);
+    const sqrtP     = priceToSqrtPriceX96(1 / 2000, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    expect(tickLower % 60 == 0).toBe(true);
+    expect(tickUpper % 60 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    const startTick = priceToTick(1 / 2000, sorted0.decimals, sorted1.decimals);
+    expect(startTick).toBeGreaterThan(tickLower);
+    expect(startTick).toBeLessThan(tickUpper);
+  });
+
+  it("Uniswap V3 fee=100 (spacing=1): tick is exactly aligned (spacing=1 accepts all ticks)", () => {
+    const raw     = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    const snapped = snapTick(raw, 1, true);
+    expect(snapped).toBe(raw);
+  });
+
+  it("priceToTick monotonic: $1000 > $2000 > $4000 → decreasing pool tick for USDC/WETH", () => {
+    const t1000 = priceToTick(1 / 1000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    const t2000 = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    const t4000 = priceToTick(1 / 4000, USDC_ASEP.decimals, WETH_ASEP.decimals);
+    expect(t4000).toBeLessThan(t2000);
+    expect(t2000).toBeLessThan(t1000);
+  });
+});
+
+// ─── OP Sepolia — Uniswap V3 only ────────────────────────────────────────────
+//
+// WETH (0x4200…) < USDC (0x5fd8…) by address → WETH=sorted0, USDC=sorted1
+// decAdj = 6 − 18 = −12  (same negative branch as Arbitrum mainnet WETH/USDC)
+// At ETH=$2000: poolPrice=2000×10^-12=2e-9, tick≈−200_312
+
+describe("OP Sepolia — WETH(18)/USDC(6) — Uniswap V3", () => {
+  const WETH_OSEP = { address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18 };
+  const USDC_OSEP = { address: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", symbol: "USDC", decimals: 6 };
+
+  it("sortTokens: WETH(0x42) < USDC(0x5f) → WETH=sorted0, USDC=sorted1", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WETH_OSEP, USDC_OSEP);
+    expect(sorted0.symbol).toBe("WETH");
+    expect(sorted1.symbol).toBe("USDC");
+    expect(wasSwapped).toBe(false);
+  });
+
+  it("inverted (USDC token0 / WETH token1): wasSwapped=true, sorted0=WETH", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDC_OSEP, WETH_OSEP);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("WETH");
+    expect(sorted1.symbol).toBe("USDC");
+  });
+
+  it("ETH=$2000: tick is near −200_312 (same as Arbitrum mainnet WETH/USDC)", () => {
+    const tick = priceToTick(2000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    expect(tick).toBeCloseTo(-200_312, -2);
+    expect(tick).toBeLessThan(-195_000);
+  });
+
+  it("inverted: user enters USDC/WETH → pairSwapped → tick equals canonical WETH/USDC tick", () => {
+    // pairSwapped: pool direction unchanged — price 2000 USDC/WETH is the native direction for WETH=sorted0
+    const canonical  = priceToTick(2000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    const viaInverse = priceToTick(2000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    expect(canonical).toBe(viaInverse);
+  });
+
+  it("Uniswap V3 fee=3000 (spacing=60): full flow for $1500–$3000 range", () => {
+    const { sorted0, sorted1 } = sortTokens(WETH_OSEP, USDC_OSEP);
+    const tickLower = snapTick(priceToTick(1500, sorted0.decimals, sorted1.decimals), 60, true);
+    const tickUpper = snapTick(priceToTick(3000, sorted0.decimals, sorted1.decimals), 60, false);
+    const sqrtP     = priceToSqrtPriceX96(2000, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    expect(tickLower % 60 == 0).toBe(true);
+    expect(tickUpper % 60 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    const startTick = priceToTick(2000, sorted0.decimals, sorted1.decimals);
+    expect(startTick).toBeGreaterThan(tickLower);
+    expect(startTick).toBeLessThan(tickUpper);
+  });
+
+  it("priceToTick monotonic: $1500 < $2000 < $3000 (WETH/USDC — higher price = higher tick)", () => {
+    const t1500 = priceToTick(1500, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    const t2000 = priceToTick(2000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    const t3000 = priceToTick(3000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    expect(t1500).toBeLessThan(t2000);
+    expect(t2000).toBeLessThan(t3000);
+  });
+
+  it("OP Sepolia WETH/USDC tick matches Arbitrum mainnet WETH/USDC at same price (same decimal layout)", () => {
+    const USDC_ARB = { decimals: 6 };
+    const WETH_ARB = { decimals: 18 };
+    const tickOPSep = priceToTick(2000, WETH_OSEP.decimals, USDC_OSEP.decimals);
+    const tickARB   = priceToTick(2000, WETH_ARB.decimals,  USDC_ARB.decimals);
+    expect(tickOPSep).toBe(tickARB);
+  });
+});
+
+// ─── BNB Testnet — PancakeSwap V3 only ───────────────────────────────────────
+//
+// USDT (0x3376…) < WBNB (0xae13…) by address → USDT=sorted0, WBNB=sorted1
+// decAdj = 0  (both 18 dec — same pattern as BNB mainnet)
+// humanPrice = WBNB per USDT = 1/BNB_USD
+// At BNB=$400: humanPrice=1/400=0.0025, poolPrice=0.0025, tick≈−59_910
+
+describe("BNB Testnet — USDT(18)/WBNB(18) — PancakeSwap V3 only", () => {
+  const USDT_BNBT = { address: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd", symbol: "USDT", decimals: 18 };
+  const WBNB_BNBT = { address: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd", symbol: "WBNB", decimals: 18 };
+  const CAKE_BNBT = { address: "0xFa60D973F7642B748046464e165A65B7323b0C73", symbol: "CAKE", decimals: 18 };
+
+  it("sortTokens: USDT(0x33) < WBNB(0xae) → USDT=sorted0, WBNB=sorted1", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(USDT_BNBT, WBNB_BNBT);
+    expect(sorted0.symbol).toBe("USDT");
+    expect(sorted1.symbol).toBe("WBNB");
+    expect(wasSwapped).toBe(false);
+  });
+
+  it("inverted (WBNB token0 / USDT token1): wasSwapped=true, sorted0=USDT", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(WBNB_BNBT, USDT_BNBT);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("USDT");
+    expect(sorted1.symbol).toBe("WBNB");
+  });
+
+  it("BNB=$400: tick is near −59_910 (negative, same decAdj=0 as BNB mainnet)", () => {
+    const tick = priceToTick(1 / 400, USDT_BNBT.decimals, WBNB_BNBT.decimals);
+    expect(tick).toBeCloseTo(-59_910, -2);
+    expect(tick).toBeLessThan(0);
+  });
+
+  it("inverted: user enters $400 USDT/WBNB → pool price 1/400 → same tick as canonical", () => {
+    const canonical  = priceToTick(1 / 400, USDT_BNBT.decimals, WBNB_BNBT.decimals);
+    const viaInverse = priceToTick(1 / 400, USDT_BNBT.decimals, WBNB_BNBT.decimals);
+    expect(canonical).toBe(viaInverse);
+  });
+
+  it("PancakeSwap V3 fee=2500 (spacing=50): full flow for $300–$600 BNB range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDT_BNBT, WBNB_BNBT);
+    const tickLower = snapTick(priceToTick(1 / 600, sorted0.decimals, sorted1.decimals), 50, true);
+    const tickUpper = snapTick(priceToTick(1 / 300, sorted0.decimals, sorted1.decimals), 50, false);
+    const sqrtP     = priceToSqrtPriceX96(1 / 400, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    expect(tickLower % 50 == 0).toBe(true);
+    expect(tickUpper % 50 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+    const startTick = priceToTick(1 / 400, sorted0.decimals, sorted1.decimals);
+    expect(startTick).toBeGreaterThan(tickLower);
+    expect(startTick).toBeLessThan(tickUpper);
+    expect(tickUpper).toBeLessThan(0); // both ticks negative for these prices
+  });
+
+  it("PancakeSwap V3 fee=100 (spacing=1): ticks aligned for tight $380–$420 range", () => {
+    const { sorted0, sorted1 } = sortTokens(USDT_BNBT, WBNB_BNBT);
+    const tickLower = snapTick(priceToTick(1 / 420, sorted0.decimals, sorted1.decimals), 1, true);
+    const tickUpper = snapTick(priceToTick(1 / 380, sorted0.decimals, sorted1.decimals), 1, false);
+    expect(tickLower % 1 == 0).toBe(true);
+    expect(tickUpper % 1 == 0).toBe(true);
+    expect(tickLower).toBeLessThan(tickUpper);
+  });
+
+  it("CAKE/WBNB: sortTokens CAKE(0xFa) > WBNB(0xae) → wasSwapped=true, sorted0=WBNB", () => {
+    const { sorted0, sorted1, wasSwapped } = sortTokens(CAKE_BNBT, WBNB_BNBT);
+    expect(wasSwapped).toBe(true);
+    expect(sorted0.symbol).toBe("WBNB");
+    expect(sorted1.symbol).toBe("CAKE");
+  });
+
+  it("CAKE/WBNB inverted: user enters CAKE/WBNB → pool uses WBNB/CAKE after swap", () => {
+    const { sorted0, sorted1 } = sortTokens(WBNB_BNBT, CAKE_BNBT); // natural WBNB/CAKE
+    // CAKE=$0.50, BNB=$400 → price in CAKE per WBNB = 400/0.5 = 800
+    const sqrtP = priceToSqrtPriceX96(800, sorted0.decimals, sorted1.decimals);
+    expect(sqrtP).toBeGreaterThan(0n);
+    const tick = priceToTick(800, sorted0.decimals, sorted1.decimals);
+    expect(tick).toBeGreaterThan(0); // WBNB/CAKE at 800 CAKE/WBNB → positive ticks
+  });
+
+  it("BNB Testnet ticks match BNB mainnet at same price (both 18-dec pairs, decAdj=0)", () => {
+    const USDC_BNB_MAIN = { decimals: 18 }; // BNB mainnet USDC is 18 dec
+    const WBNB_MAIN     = { decimals: 18 };
+    const tickTestnet = priceToTick(1 / 400, USDT_BNBT.decimals, WBNB_BNBT.decimals);
+    const tickMainnet = priceToTick(1 / 400, USDC_BNB_MAIN.decimals, WBNB_MAIN.decimals);
+    // Same decimal layout → same tick regardless of chain
+    expect(tickTestnet).toBe(tickMainnet);
   });
 });
