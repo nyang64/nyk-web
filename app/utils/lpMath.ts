@@ -57,7 +57,10 @@ export function priceToSqrtPriceX96(
 }
 
 /**
- * Convert a human-readable price (sorted1 per sorted0) to the nearest Uniswap V3 tick.
+ * Convert a human-readable price (sorted1 per sorted0) to a raw (non-integer) Uniswap V3 tick.
+ * Returns a float — do NOT floor here; snapTick handles rounding in the correct direction
+ * (down for tickLower, up for tickUpper).  Pre-flooring here would cause tickUpper to be set
+ * one spacing too low when the raw tick lands just above a grid boundary.
  */
 export function priceToTick(
   humanPrice: number,
@@ -66,7 +69,7 @@ export function priceToTick(
 ): number {
   const poolPrice = humanPrice * Math.pow(10, token1Dec - token0Dec);
   if (poolPrice <= 0) return 0;
-  return Math.floor(Math.log(poolPrice) / Math.log(1.0001));
+  return Math.log(poolPrice) / Math.log(1.0001);
 }
 
 /**

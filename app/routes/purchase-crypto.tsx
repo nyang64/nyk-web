@@ -89,7 +89,7 @@ export default function PurchaseCrypto() {
           <h3 style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '1rem' }}>
             Most Economic Path
           </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '1rem', lineHeight: '1.6' }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '1rem', lineHeight: '1.6' }}>
             Credit card and instant-buy services charge 2–5% fees. The cheapest way to move fiat into
             crypto — and back — is via the ACH route below. Fees are typically under 0.5% end-to-end.
           </p>
@@ -170,7 +170,7 @@ export default function PurchaseCrypto() {
             </div>
           </div>
 
-          <p style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '1rem', marginBottom: 0, lineHeight: '1.5' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '1rem', marginBottom: 0, lineHeight: '1.5' }}>
             Use <strong style={{ color: 'var(--text)' }}>Base network</strong> when withdrawing from the CEX — it has the lowest withdrawal fees
             among all EVM chains. Once USDC is in your wallet, swap to any token on{' '}
             <a href="https://aerodrome.finance/swap" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981' }}>
@@ -399,7 +399,7 @@ export default function PurchaseCrypto() {
             padding: '1rem 1.25rem',
             marginBottom: '1.25rem',
             fontSize: '0.82rem',
-            color: 'var(--muted)',
+            color: 'var(--text)',
             lineHeight: '1.6',
           }}>
             <div style={{ fontWeight: 600, color: '#f87171', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
@@ -454,7 +454,7 @@ export default function PurchaseCrypto() {
             <p style={{
               textAlign: 'center',
               fontSize: '0.9rem',
-              color: 'var(--muted)',
+              color: 'var(--text)',
               marginTop: '0.75rem',
             }}>
               Enter an amount above to continue
@@ -483,7 +483,7 @@ export default function PurchaseCrypto() {
           <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '1rem' }}>
             About MoonPay
           </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: 0 }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: 0 }}>
             Click the button above to open the MoonPay widget. Accepts credit/debit card,
             Apple Pay, Google Pay, and bank transfer in 150+ countries. Convenient for
             small amounts or when you need crypto quickly — no CEX account required.

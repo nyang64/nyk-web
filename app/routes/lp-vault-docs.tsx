@@ -2,11 +2,11 @@ import type { Route } from "./+types/lp-vault-docs";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "About NYK Labs LP Vaults | NYK Labs" },
+    { title: "About nLock | NYK Labs" },
     {
       name: "description",
       content:
-        "Learn how NYK Labs LP Vaults work: non-custodial NFT position locking, supported networks and protocols, pool initialization, vault lock/close flow, and deployed contract addresses.",
+        "Learn how nLock by NykLabs works: non-custodial LP NFT position locking, supported networks and protocols, pool initialization, lock/close flow, and deployed contract addresses.",
     },
   ];
 }
@@ -32,10 +32,10 @@ export default function LpVaultDocs() {
       <div style={S.page}>
         <div style={S.card}>
           <h2 style={{ fontSize: "1.1rem", color: "var(--accent)", fontWeight: 600, marginBottom: "0.75rem" }}>
-            About NYK Labs LP Vaults
+            About nLock
           </h2>
-          <p style={{ color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.7", marginBottom: "1rem" }}>
-            NYK Labs LP Vaults are non-custodial smart contracts that accept a Uniswap V3-style NFT position
+          <p style={{ color: "var(--text)", fontSize: "0.9rem", lineHeight: "1.7", marginBottom: "1rem" }}>
+            nLock vaults are non-custodial smart contracts that accept a Uniswap V3-style NFT position
             and lock it for a configurable duration. During the lock period the original owner can still collect
             trading fees at any time; only the NFT itself (representing the liquidity) is held by the vault until
             the unlock time passes. This design lets protocols and teams demonstrate long-term liquidity commitment
@@ -138,7 +138,7 @@ export default function LpVaultDocs() {
           <h3 style={{ fontSize: "0.95rem", color: "var(--text)", fontWeight: 600, marginBottom: "0.75rem" }}>
             How Pools &amp; Positions Are Initialized
           </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.88rem", color: "#9ca3af", lineHeight: "1.65" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.88rem", color: "var(--text)", lineHeight: "1.65" }}>
 
             <div style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: "8px", padding: "0.9rem 1.1rem" }}>
               <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Uniswap V3 &amp; PancakeSwap V3</div>
@@ -173,7 +173,7 @@ export default function LpVaultDocs() {
               <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>Vault Lock &amp; Close Flow</div>
               <p style={{ marginBottom: "0.6rem" }}>
                 After a position NFT is minted it is <strong style={{ color: "var(--text)" }}>approved and transferred</strong> to the
-                NYK Labs LP Vault contract via <code style={{ color: "#10b981" }}>createLock(manager, tokenId, unlockTime)</code>.
+                nLock vault contract via <code style={{ color: "#10b981" }}>createLock(manager, tokenId, unlockTime)</code>.
                 The vault records the owner, the position manager address, and the unlock timestamp.
                 During the lock the owner may call <code style={{ color: "#10b981" }}>collectFees()</code> to harvest accrued trading fees
                 at any time. Once the unlock time has passed, <code style={{ color: "#10b981" }}>withdrawNFT()</code> returns the NFT to

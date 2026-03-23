@@ -168,6 +168,86 @@ describe("snapTick — Aerodrome tick spacing 200", () => {
   });
 });
 
+// ─── snapTick — float raw tick inputs (regression: pre-floor bug) ────────────
+
+describe("snapTick — float raw tick inputs", () => {
+  /**
+   * Before the fix, priceToTick applied Math.floor internally before handing
+   * off to snapTick.  When a raw float tick landed just above a grid boundary
+   * (e.g. -59799.9 with spacing 200), Math.floor converted it to -59800
+   * (exactly on the boundary) and snapTick returned -59800 — one spacing too
+   * low for tickUpper.  The correct tickUpper is -59600.
+   *
+   * snapTick must now receive the raw float directly and handle it correctly.
+   */
+  const SPACING = 200;
+
+  it("tickUpper: raw float just above a grid boundary snaps UP (core regression)", () => {
+    // -59799.9 sits between -59800 and -59600; tickUpper must be -59600, not -59800
+    expect(snapTick(-59799.9, SPACING, false)).toBe(-59600);
+  });
+
+  it("tickUpper: raw float just below a grid boundary stays at that boundary", () => {
+    // -59800.1 is just below -59800; tickUpper must be -59800
+    expect(snapTick(-59800.1, SPACING, false)).toBe(-59800);
+  });
+
+  it("tickLower: raw float just below a grid boundary snaps DOWN (symmetric)", () => {
+    // -59800.1 is just below -59800; tickLower must be -60000
+    expect(snapTick(-59800.1, SPACING, true)).toBe(-60000);
+  });
+
+  it("tickLower: raw float just above a grid boundary stays at that boundary", () => {
+    // -59799.9 is just above -59800; tickLower must be -59800
+    expect(snapTick(-59799.9, SPACING, true)).toBe(-59800);
+  });
+
+  it("tickUpper: positive domain float just above boundary snaps up", () => {
+    // 59800.1 is just above 59800; tickUpper must be 60000
+    expect(snapTick(59800.1, SPACING, false)).toBe(60000);
+  });
+
+  it("tickLower: positive domain float just below boundary snaps down", () => {
+    // 59799.9 is just below 59800; tickLower must be 59600
+    expect(snapTick(59799.9, SPACING, true)).toBe(59600);
+  });
+
+  it("exactly on a grid boundary is unchanged for both directions", () => {
+    expect(snapTick(-59800, SPACING, false)).toBe(-59800);
+    expect(snapTick(-59800, SPACING, true)).toBe(-59800);
+  });
+});
+
+// ─── priceToTick — returns raw float, not a pre-floored integer ───────────────
+
+describe("priceToTick — returns raw float (no internal Math.floor)", () => {
+  it("returns a non-integer for a typical price", () => {
+    // ln(poolPrice) / ln(1.0001) is transcendental — the result is never an exact integer
+    const tick = priceToTick(0.075, HLRR.decimals, USDC.decimals);
+    expect(Number.isInteger(tick)).toBe(false);
+  });
+
+  it("end-to-end: tickUpper is correct for a price whose raw tick falls just above a grid boundary", () => {
+    // Back-compute the human price that sits 0.1 ticks above the -59800 grid line
+    // (tick spacing 200).  Raw tick ≈ -59799.9 — the exact scenario the bug suppressed.
+    //
+    // pool_price at tick T = 1.0001^T
+    // human_price (USDC/HLRR) = pool_price × 100  (HLRR 8dec, USDC 6dec)
+    const BOUNDARY_TICK = -59800;
+    const priceAboveBoundary =
+      Math.pow(1.0001, BOUNDARY_TICK) * Math.pow(1.0001, 0.1) * 100;
+
+    const rawTick = priceToTick(priceAboveBoundary, HLRR.decimals, USDC.decimals);
+    // Raw tick must be just above the boundary (≈ -59799.9)
+    expect(rawTick).toBeGreaterThan(BOUNDARY_TICK);
+    expect(rawTick).toBeLessThan(BOUNDARY_TICK + 1);
+
+    const tickUpper = snapTick(rawTick, AERO_TICK_SPACING, false);
+    // Must snap UP to -59600, not stay at -59800
+    expect(tickUpper).toBe(BOUNDARY_TICK + AERO_TICK_SPACING);
+  });
+});
+
 // ─── priceToSqrtPriceX96 ─────────────────────────────────────────────────────
 
 describe("priceToSqrtPriceX96 — HLRR(8)/USDC(6)", () => {
@@ -528,11 +608,13 @@ describe("snapTick — all Uniswap fee tier tick spacings", () => {
     });
   }
 
-  it("spacing=1 (fee=100): snapped tick equals raw tick (every tick is valid)", () => {
+  it("spacing=1 (fee=100): snapped tick is floor/ceil of raw float (every integer tick is valid)", () => {
+    // priceToTick now returns a raw float; spacing=1 means every integer is valid.
+    // tickLower = floor(raw), tickUpper = ceil(raw) — both within 1 of the raw value.
     const snappedLower = snapTick(rawTick, 1, true);
     const snappedUpper = snapTick(rawTick, 1, false);
-    expect(snappedLower).toBe(rawTick);
-    expect(snappedUpper).toBe(rawTick);
+    expect(snappedLower).toBe(Math.floor(rawTick));
+    expect(snappedUpper).toBe(Math.ceil(rawTick));
   });
 
   it("spacing=200: distance between tickLower and tickUpper ≥ 200", () => {
@@ -1556,10 +1638,10 @@ describe("Arbitrum Sepolia — USDC(6)/WETH(18) — Uniswap V3", () => {
     expect(startTick).toBeLessThan(tickUpper);
   });
 
-  it("Uniswap V3 fee=100 (spacing=1): tick is exactly aligned (spacing=1 accepts all ticks)", () => {
+  it("Uniswap V3 fee=100 (spacing=1): snapped tick is floor of raw float (every integer tick is valid)", () => {
     const raw     = priceToTick(1 / 2000, USDC_ASEP.decimals, WETH_ASEP.decimals);
     const snapped = snapTick(raw, 1, true);
-    expect(snapped).toBe(raw);
+    expect(snapped).toBe(Math.floor(raw));
   });
 
   it("priceToTick monotonic: $1000 > $2000 > $4000 → decreasing pool tick for USDC/WETH", () => {

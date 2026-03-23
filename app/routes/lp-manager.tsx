@@ -7,12 +7,19 @@ import { WalletPickerModal } from "../components/WalletPickerModal";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "LP Position Creator | NYK Labs" },
+    { title: "nRange© & nLock© | Free DeFi LP Creator & NFT Locker | NykLabs" },
     {
       name: "description",
       content:
-        "Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across Base, Arbitrum, Optimism, Polygon, and BNB Chain.",
+        "nRange and nLock by NykLabs are free web-based DeFi tools for Ethereum-compatible chains. nRange creates concentrated liquidity positions; nLock secures LP NFTs in a non-custodial vault — both supporting Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across Base, Arbitrum, Optimism, Polygon, and BNB Chain.",
     },
+    { name: "keywords", content: "liquidity pool, LP position, LP NFT locker, DeFi, Uniswap V3, PancakeSwap V3, Aerodrome, Velodrome, concentrated liquidity, Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, nRange, nLock, NykLabs, free DeFi tool" },
+    { property: "og:title", content: "nRange© & nLock© | Free DeFi LP Creator & NFT Locker | NykLabs" },
+    { property: "og:description", content: "Free web-based DeFi tools by NykLabs. nRange creates concentrated LP positions; nLock secures LP NFTs in a non-custodial vault — across Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "twitter:title", content: "nRange© & nLock© | Free DeFi LP Creator & NFT Locker | NykLabs" },
+    { name: "twitter:description", content: "Free web-based DeFi tools by NykLabs. nRange creates concentrated LP positions; nLock secures LP NFTs in a non-custodial vault — across Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream." },
   ];
 }
 
@@ -743,8 +750,9 @@ export default function LpManager() {
     if (protocol === "uniswap" && !(chainId in UNISWAP_ADDRESSES) && chainId in PANCAKESWAP_ADDRESSES) setProtocol("pancakeswap");
   }, [chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-populate lock NFPM when chain / protocol changes
+  // Auto-populate lock NFPM when chain / protocol changes; reset when disconnected
   useEffect(() => {
+    if (!connectedAddress) { setLockNfpm(""); return; }
     if (chainId && protocol) {
       const nfpmAddr =
         isSlipstream(protocol)
@@ -754,7 +762,7 @@ export default function LpManager() {
           : UNISWAP_ADDRESSES[chainId]?.nfpm ?? "";
       setLockNfpm(nfpmAddr);
     }
-  }, [chainId, protocol]);
+  }, [connectedAddress, chainId, protocol]);
 
   const connectWithProvider = async (detail: EIP6963ProviderDetail) => {
     setTxStatus({ type: "connecting" });
@@ -1540,21 +1548,21 @@ export default function LpManager() {
           <h2 style={{ fontSize: "1.1rem", color: "var(--accent)", fontWeight: 600, marginBottom: "0.75rem" }}>
             Steps for LP Creation and Lock
           </h2>
-          <ol style={{ color: "#9ca3af", fontSize: "0.9rem", lineHeight: "1.9", marginBottom: "1rem", paddingLeft: "1.25rem" }}>
+          <ol style={{ color: "var(--text)", fontSize: "0.9rem", lineHeight: "1.9", marginBottom: "1rem", paddingLeft: "1.25rem" }}>
             <li><strong style={{ color: "var(--text)" }}>Connect wallet</strong> — connect your wallet and switch it to the intended network before proceeding.</li>
             <li><strong style={{ color: "var(--text)" }}>Configure</strong> — select protocol, fee tier, token pair, price range, starting price, and token amounts.</li>
             <li><strong style={{ color: "var(--text)" }}>Approve tokens</strong> — grant the position manager permission to spend each token from your wallet.</li>
             <li><strong style={{ color: "var(--text)" }}>Create LP &amp; mint NFT</strong> — the protocol creates the pool if it does not yet exist, deposits your tokens into the price range, and automatically mints a concentrated-liquidity NFT representing your position.</li>
             <li><strong style={{ color: "var(--text)" }}>Select lock duration</strong> — choose how long to lock the position (the unlock timestamp is set once and cannot be shortened).</li>
-            <li><strong style={{ color: "var(--text)" }}>Approve &amp; lock NFT</strong> — approve the vault to receive the NFT, then transfer it to the NYK Labs LP Vault. The vault records your ownership and unlock time; you can still collect trading fees at any time during the lock.</li>
+            <li><strong style={{ color: "var(--text)" }}>Approve &amp; lock NFT</strong> — approve nLock to receive the NFT, then transfer it to the nLock vault. nLock records your ownership and unlock time; you can still collect trading fees at any time during the lock.</li>
             <li><strong style={{ color: "var(--text)" }}>Withdraw &amp; close</strong> — once the lock expires, withdraw the NFT from the vault and optionally close the position to reclaim both tokens.</li>
           </ol>
           <a href="/lp-vault-docs" style={{ color: "var(--accent)", fontSize: "0.88rem", textDecoration: "none" }}>
-            About LP Vaults: deployed contracts, supported networks &amp; protocol docs →
+            About nLock: deployed contracts, supported networks &amp; protocol docs →
           </a>
         </div>
         {/* Starting price warning */}
-        <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "8px", padding: "0.9rem 1.1rem", marginBottom: "1.5rem", fontSize: "0.88rem", color: "#9ca3af", lineHeight: "1.65" }}>
+        <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "8px", padding: "0.9rem 1.1rem", marginBottom: "1.5rem", fontSize: "0.88rem", color: "var(--text)", lineHeight: "1.65" }}>
           <div style={{ fontWeight: 600, color: "#f87171", marginBottom: "0.35rem" }}>⚠ Starting Price Must Match Across Pools for the Same Pair</div>
           <p style={{ margin: 0 }}>
             The starting price only matters when a pool is being <strong style={{ color: "var(--text)" }}>created for the first time</strong>.
@@ -1571,12 +1579,14 @@ export default function LpManager() {
         </div>
 
         {/* Header */}
-        <div style={{ marginBottom: "1.25rem" }}>
+        <div id="nrange" style={{ marginBottom: "1.25rem" }}>
           <h1 style={{ fontSize: "1.8rem", color: "var(--accent)", fontWeight: 700 }}>
-            LP Position Creator
+            nRange&copy;
           </h1>
-          <p style={{ color: "#9ca3af", marginTop: "0.4rem" }}>
-            Create and lock concentrated liquidity positions on Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across multiple networks
+          <p style={{ color: "var(--text)", marginTop: "0.4rem" }}>
+            nRange is a free, web-based concentrated liquidity position creator for Ethereum-compatible chains. Deploy and manage LP positions across Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream — developed by NykLabs.
+            There is no restriction on token amounts — deposit as little or as much as you like.
+            If you are new to liquidity provisioning, we recommend starting with a small or tiny amount first to familiarize yourself with the full flow: LP creation, NFT minting, locking with nLock, fee collection through swaps, and closing your position.
           </p>
         </div>
 
@@ -2020,29 +2030,38 @@ export default function LpManager() {
         {/* ── Divider ── */}
         <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "1.5rem 0" }} />
 
+        {/* nLock Header */}
+        <div id="nlock" style={{ marginBottom: "1.25rem" }}>
+          <h1 style={{ fontSize: "1.8rem", color: "var(--accent)", fontWeight: 700 }}>
+            nLock&copy;
+          </h1>
+          <p style={{ color: "var(--text)", marginTop: "0.4rem" }}>
+            nLock is a free, web-based liquidity pool NFT locker for Ethereum-compatible chains. Secure your LP NFT positions in a non-custodial vault across Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream — developed by NykLabs.
+            There is no restriction on lock duration — lock for as short or as long a period as you choose.
+            If you are testing the flow for the first time, we recommend using a very short lock period so you can quickly experience the full cycle end to end.
+          </p>
+        </div>
+
         {/* ── Lock LP Position ── */}
         <div style={S.card}>
           <p style={{ ...S.sectionTitle, fontSize: "1.1rem", marginBottom: "1.25rem" }}>
             Lock LP Position
           </p>
-          <p style={{ fontSize: "0.85rem", color: "#9ca3af", marginBottom: "1.25rem" }}>
+          <p style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "1.25rem" }}>
             Lock your LP NFT into the vault to prevent it from being flagged as unlocked liquidity. You can still collect trading fees while it is locked.
           </p>
 
           {/* NFPM */}
           <div style={{ marginBottom: "1rem" }}>
-            <label style={S.label}>NFPM Address <span style={{ color: "#6b7280" }}>(auto-filled from protocol)</span></label>
-            <input
-              style={S.input}
-              value={lockNfpm}
-              onChange={(e) => setLockNfpm(e.target.value)}
-              placeholder="0x..."
-            />
+            <label style={{ ...S.label, color: "var(--text)" }}>NFPM Address <span style={{ color: "#6b7280" }}>(auto-filled from protocol)</span></label>
+            <div style={{ ...S.input, color: lockNfpm ? "#e5e7eb" : "#6b7280", wordBreak: "break-all" }}>
+              {lockNfpm || "Not available on this network"}
+            </div>
           </div>
 
           {/* Token ID */}
           <div style={{ marginBottom: "1rem" }}>
-            <label style={S.label}>LP NFT Token ID</label>
+            <label style={{ ...S.label, color: "var(--text)" }}>LP NFT Token ID</label>
             <input
               style={S.input}
               type="number"
@@ -2054,7 +2073,7 @@ export default function LpManager() {
 
           {/* Unlock date */}
           <div style={{ marginBottom: "1rem" }}>
-            <label style={S.label}>Unlock Date &amp; Time (24h)</label>
+            <label style={{ ...S.label, color: "var(--text)" }}>Unlock Date &amp; Time (24h)</label>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <input
                 style={{ ...S.input, flex: 2 }}
@@ -2085,7 +2104,7 @@ export default function LpManager() {
 
           {/* Vault address */}
           <div style={{ marginBottom: "1.25rem" }}>
-            <label style={S.label}>Vault Contract Address</label>
+            <label style={{ ...S.label, color: "var(--text)" }}>Vault Contract Address</label>
             <div style={{ ...S.input, color: vaultAddress ? "#e5e7eb" : "#6b7280", wordBreak: "break-all" }}>
               {vaultAddress || "Not available on this network"}
             </div>
@@ -2284,6 +2303,12 @@ export default function LpManager() {
               {lockTxStatus.type === "collecting" ? "Collecting fees…" : "Withdrawing NFT…"}
             </div>
           )}
+        </div>
+
+        {/* Feedback */}
+        <div style={{ marginTop: "2rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center", color: "var(--text)", fontSize: "0.85rem" }}>
+          Experiencing a problem? Send feedback to{" "}
+          <a href="mailto:admin@nyklabs.com" style={{ color: "var(--accent)" }}>admin@nyklabs.com</a>
         </div>
 
       </div>
