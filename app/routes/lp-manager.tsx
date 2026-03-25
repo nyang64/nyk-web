@@ -182,14 +182,14 @@ const SLIPSTREAM_ADDRESSES: Partial<Record<number, { clFactory: string; nfpm: st
 // All positions additionally get a block explorer /nft/ link regardless (see render).
 const NFPM_POSITION_URL: Record<string, { label: string; url: (id: string) => string }> = {
   // ── Uniswap V3 mainnets ────────────────────────────────────────────────────
-  [`${CHAIN.ETH_MAINNET}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/ethereum/${id}` },
-  [`${CHAIN.BASE_MAINNET}-0x03a520b32c04bf3beef7beb72e919cf822ed34f1`]: { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/base/${id}` },
-  [`${CHAIN.ARBITRUM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/arbitrum/${id}` },
-  [`${CHAIN.OPTIMISM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/optimism/${id}` },
-  [`${CHAIN.POLYGON}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:      { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/polygon/${id}` },
-  [`${CHAIN.BNB}-0x7b8a01b39d58278b5de7e48c8449c9f4f5170613`]:          { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/bnb/${id}` },
+  [`${CHAIN.ETH_MAINNET}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/ethereum/${id}` },
+  [`${CHAIN.BASE_MAINNET}-0x03a520b32c04bf3beef7beb72e919cf822ed34f1`]: { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/base/${id}` },
+  [`${CHAIN.ARBITRUM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/arbitrum/${id}` },
+  [`${CHAIN.OPTIMISM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/optimism/${id}` },
+  [`${CHAIN.POLYGON}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:      { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/polygon/${id}` },
+  [`${CHAIN.BNB}-0x7b8a01b39d58278b5de7e48c8449c9f4f5170613`]:          { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/bnb/${id}` },
   // ── Uniswap V3 testnets ────────────────────────────────────────────────────
-  [`${CHAIN.ETH_SEPOLIA}-0x1238536071e1c677a632429e3655c799b22cda52`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/sepolia/${id}` },
+  [`${CHAIN.ETH_SEPOLIA}-0x1238536071e1c677a632429e3655c799b22cda52`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/positions/v3/sepolia/${id}` },
   // ── PancakeSwap V3 mainnets (shared NFPM across ETH/Base/ARB/BNB) ─────────
   [`${CHAIN.ETH_MAINNET}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]:  { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
   [`${CHAIN.BASE_MAINNET}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]: { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
@@ -2068,16 +2068,7 @@ export default function LpManager() {
                       <br />
                       <a href={info.url(txStatus.tokenId)} target="_blank" rel="noopener noreferrer"
                         style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.85rem" }}>
-                        View on {info.label} →
-                      </a>
-                    </>
-                  )}
-                  {nfpmAddr && (
-                    <>
-                      <br />
-                      <a href={`${basescanBase}/nft/${nfpmAddr}/${txStatus.tokenId}`} target="_blank" rel="noopener noreferrer"
-                        style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.85rem" }}>
-                        View NFT on explorer →
+                        View position & token composition on {info.label} →
                       </a>
                     </>
                   )}
