@@ -2275,14 +2275,10 @@ export default function LpManager() {
 
           {/* Token ID */}
           <div style={{ marginBottom: "1rem" }}>
-            <label style={{ ...S.label, color: "var(--text)" }}>LP NFT Token ID</label>
-            <input
-              style={S.input}
-              type="number"
-              value={lockTokenId}
-              onChange={(e) => setLockTokenId(e.target.value)}
-              placeholder="e.g. 12345  (shown in success message after creating above)"
-            />
+            <label style={{ ...S.label, color: "var(--text)" }}>LP NFT Token ID <span style={{ color: "#6b7280" }}>(select via "Lock ↓" above)</span></label>
+            <div style={{ ...S.input, color: lockTokenId ? "#e5e7eb" : "#6b7280" }}>
+              {lockTokenId ? `NFT #${lockTokenId}` : "None selected — click Lock ↓ on a wallet position above"}
+            </div>
           </div>
 
           {/* Unlock date */}
