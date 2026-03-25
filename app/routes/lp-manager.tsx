@@ -1508,7 +1508,7 @@ export default function LpManager() {
       await (await nfpm.multicall(calls)).wait();
       await (await nfpm.burn(BigInt(tokenId))).wait();
 
-      await fetchWalletPositions();
+      await Promise.all([fetchWalletPositions(), fetchMyLocks()]);
     } catch (err: unknown) {
       const e = err as { code?: number | string; reason?: string; message?: string };
       if (e.code !== 4001 && e.code !== "ACTION_REJECTED") {
