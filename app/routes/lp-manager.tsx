@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "nRange and nLock by NykLabs are free web-based DeFi tools for Ethereum-compatible chains. nRange creates concentrated liquidity positions; nLock secures LP NFTs in a non-custodial vault — both supporting Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across Base, Arbitrum, Optimism, Polygon, and BNB Chain.",
+        "nRange and nLock by nyklabs ('n' in nRange and nLock stands for nyklabs) are free web-based DeFi tools for Ethereum-compatible chains. nRange creates concentrated liquidity positions; nLock secures LP NFTs in a non-custodial vault — both supporting Uniswap V3, PancakeSwap V3, Aerodrome, and Velodrome Slipstream across Base, Arbitrum, Optimism, Polygon, and BNB Chain.",
     },
     { name: "keywords", content: "liquidity pool, LP position, LP NFT locker, DeFi, Uniswap V3, PancakeSwap V3, Aerodrome, Velodrome, concentrated liquidity, Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, nRange, nLock, NykLabs, free DeFi tool" },
     { property: "og:title", content: "nRange© & nLock© | Free DeFi LP Creator & NFT Locker | NykLabs" },
@@ -169,6 +169,36 @@ const SLIPSTREAM_ADDRESSES: Partial<Record<number, { clFactory: string; nfpm: st
     clFactory: "0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F",
     nfpm: "0x416b433906b1B72FA758e166e239c43d68dC6F29",
   },
+};
+
+// ─── Protocol position viewer URLs ───────────────────────────────────────────
+// Keyed by lowercase NFPM address. Testnet NFPMs are intentionally omitted —
+// none of these protocols expose a public UI for testnet positions.
+// Keyed by `${chainId}-${nfpmAddress_lowercase}`.
+// Using chainId in the key is necessary because Uniswap shares one NFPM address
+// (0xC36442…) across Ethereum, Arbitrum, Optimism, and Polygon — the chain name
+// in the URL must therefore be resolved per-chain, not per-address alone.
+// Testnet entries are included only where the protocol UI actually supports them.
+// All positions additionally get a block explorer /nft/ link regardless (see render).
+const NFPM_POSITION_URL: Record<string, { label: string; url: (id: string) => string }> = {
+  // ── Uniswap V3 mainnets ────────────────────────────────────────────────────
+  [`${CHAIN.ETH_MAINNET}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/ethereum/${id}` },
+  [`${CHAIN.BASE_MAINNET}-0x03a520b32c04bf3beef7beb72e919cf822ed34f1`]: { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/base/${id}` },
+  [`${CHAIN.ARBITRUM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/arbitrum/${id}` },
+  [`${CHAIN.OPTIMISM}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:     { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/optimism/${id}` },
+  [`${CHAIN.POLYGON}-0xc36442b4a4522e871399cd717abdd847ab11fe88`]:      { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/polygon/${id}` },
+  [`${CHAIN.BNB}-0x7b8a01b39d58278b5de7e48c8449c9f4f5170613`]:          { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/bnb/${id}` },
+  // ── Uniswap V3 testnets ────────────────────────────────────────────────────
+  [`${CHAIN.ETH_SEPOLIA}-0x1238536071e1c677a632429e3655c799b22cda52`]:  { label: "Uniswap", url: (id) => `https://app.uniswap.org/pool/sepolia/${id}` },
+  // ── PancakeSwap V3 mainnets (shared NFPM across ETH/Base/ARB/BNB) ─────────
+  [`${CHAIN.ETH_MAINNET}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]:  { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
+  [`${CHAIN.BASE_MAINNET}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]: { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
+  [`${CHAIN.ARBITRUM}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]:     { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
+  [`${CHAIN.BNB}-0x46a15b0b27311cedf172ab29e4f4766fbf7f4364`]:          { label: "PancakeSwap", url: (id) => `https://pancakeswap.finance/liquidity/${id}` },
+  // ── Aerodrome Slipstream — Base mainnet ────────────────────────────────────
+  [`${CHAIN.BASE_MAINNET}-0x827922686190790b37229fd06084350e74485b72`]: { label: "Aerodrome", url: (id) => `https://aerodrome.finance/liquidity/${id}` },
+  // ── Velodrome Slipstream — Optimism mainnet ────────────────────────────────
+  [`${CHAIN.OPTIMISM}-0x416b433906b1b72fa758e166e239c43d68dc6f29`]:    { label: "Velodrome", url: (id) => `https://velodrome.finance/liquidity/${id}` },
 };
 
 // Sentinel address used to represent the native coin in the token list.
@@ -599,6 +629,7 @@ export default function LpManager() {
   const [lockUnlockTime, setLockUnlockTime] = useState<string>("00:00");
   const [myLocks, setMyLocks] = useState<LockInfo[]>([]);
   const [lockTxStatus, setLockTxStatus] = useState<LockTxStatus>({ type: "idle" });
+  const [outOfRangeWarning, setOutOfRangeWarning] = useState("");
 
   // ─── Derived values ──────────────────────────────────────────────────────────
 
@@ -717,13 +748,14 @@ export default function LpManager() {
 
   // ─── Wallet setup ────────────────────────────────────────────────────────────
 
-  // Clear wallet tokens on every address change — disconnect OR account switch.
-  // Without this, switching accounts inside the wallet leaves stale tokens visible
-  // until fetchWalletTokens completes for the new address.
+  // Clear wallet tokens and locked positions on every address change — disconnect OR account switch.
+  // Without this, switching accounts inside the wallet leaves stale data visible
+  // until the async fetch completes for the new address.
   useEffect(() => {
     setWalletTokens([]);
     setToken0Addr("");
     setToken1Addr("");
+    setMyLocks([]);
   }, [connectedAddress]);
 
   // Reset fee tier when switching protocols if the current fee doesn't exist in the new one
@@ -736,8 +768,10 @@ export default function LpManager() {
 
   // Clear success status when any LP creation form field changes
   useEffect(() => {
-    setTxStatus((s) => (s.type === "success" ? { type: "idle" } : s));
+    setTxStatus((s) => (s.type === "success" || s.type === "error" ? { type: "idle" } : s));
     setLockTxStatus((s) => (s.type === "success" || s.type === "error" ? { type: "idle" } : s));
+    setCustomTokenError("");
+    setOutOfRangeWarning("");
   }, [protocol, token0Addr, token1Addr, selectedFee, selectedSpacing, startingPrice, minPrice, maxPrice, amount0, amount1]);
 
   // Reset protocol to uniswap when switching to a chain where current protocol is unavailable
@@ -1031,16 +1065,21 @@ export default function LpManager() {
               // Show price and range in user's entered direction
               const displayPrice = wasSwapped ? 1 / poolCurrentPrice : poolCurrentPrice;
               const [sym0, sym1] = wasSwapped
-                ? [localSorted0.symbol, localSorted1.symbol]  // user direction: sorted0/sorted1
-                : [localSorted1.symbol, localSorted0.symbol]; // pool direction: sorted1/sorted0
-              setTxStatus({
-                type: "error",
-                message:
-                  `Pool already exists at tick ${currentTick} (≈$${displayPrice.toFixed(4)} ${sym0}/${sym1}), ` +
-                  `which is OUTSIDE your range [$${userMinPrice}–$${userMaxPrice}]. ` +
-                  `Switch to a different fee tier (e.g. 1%) to create a fresh pool at the correct price.`,
-              });
-              return;
+                ? [localSorted0.symbol, localSorted1.symbol]
+                : [localSorted1.symbol, localSorted0.symbol];
+              const oneSided = currentTick >= tickUpper
+                ? (wasSwapped ? t1Label : t0Label)
+                : (wasSwapped ? t0Label : t1Label);
+              const msg =
+                `Pool exists at ≈$${displayPrice.toFixed(4)} ${sym0}/${sym1}, outside your range [$${userMinPrice}–$${userMaxPrice}]. ` +
+                `Only ${oneSided} will be deposited (out-of-range position). ` +
+                `Click "Create LP Position" again to proceed.`;
+              if (outOfRangeWarning !== msg) {
+                setOutOfRangeWarning(msg);
+                return;
+              }
+              // User clicked a second time after seeing the warning — proceed.
+              setOutOfRangeWarning("");
             }
           }
         }
@@ -2012,8 +2051,39 @@ export default function LpManager() {
               rel="noopener noreferrer"
               style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.85rem" }}
             >
-              View on BaseScan →
+              View on block explorer →
             </a>
+            {(() => {
+              const nfpmAddr = chainId === null ? "" :
+                isSlipstream(protocol)
+                  ? SLIPSTREAM_ADDRESSES[chainId]?.nfpm ?? ""
+                  : protocol === "pancakeswap"
+                  ? PANCAKESWAP_ADDRESSES[chainId]?.nfpm ?? ""
+                  : UNISWAP_ADDRESSES[chainId]?.nfpm ?? "";
+              const info = chainId !== null ? NFPM_POSITION_URL[`${chainId}-${nfpmAddr.toLowerCase()}`] : undefined;
+              return (
+                <>
+                  {info && (
+                    <>
+                      <br />
+                      <a href={info.url(txStatus.tokenId)} target="_blank" rel="noopener noreferrer"
+                        style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.85rem" }}>
+                        View on {info.label} →
+                      </a>
+                    </>
+                  )}
+                  {nfpmAddr && (
+                    <>
+                      <br />
+                      <a href={`${basescanBase}/nft/${nfpmAddr}/${txStatus.tokenId}`} target="_blank" rel="noopener noreferrer"
+                        style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.85rem" }}>
+                        View NFT on explorer →
+                      </a>
+                    </>
+                  )}
+                </>
+              );
+            })()}
             <br />
             <span style={{ fontSize: "0.78rem", color: "#6b7280", fontFamily: "monospace", wordBreak: "break-all" }}>
               Tx: {txStatus.txHash}
@@ -2024,6 +2094,21 @@ export default function LpManager() {
         {txStatus.type === "error" && (
           <div className="error-message" style={{ marginTop: "1rem" }}>
             {txStatus.message}
+          </div>
+        )}
+
+        {outOfRangeWarning && (
+          <div style={{
+            marginTop: "1rem",
+            padding: "0.75rem 1rem",
+            background: "rgba(251,191,36,0.08)",
+            border: "1px solid rgba(251,191,36,0.35)",
+            borderRadius: 8,
+            color: "#fbbf24",
+            fontSize: "0.85rem",
+            lineHeight: "1.55",
+          }}>
+            ⚠ {outOfRangeWarning}
           </div>
         )}
 
@@ -2220,6 +2305,14 @@ export default function LpManager() {
                     <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.2rem" }}>
                       NFPM: {lock.manager.slice(0, 8)}…{lock.manager.slice(-6)}
                     </div>
+                    <a
+                      href={`${basescanBase}/nft/${lock.manager}/${lock.tokenId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: "0.78rem", color: "#6b7280", textDecoration: "none", marginTop: "0.3rem", display: "inline-block" }}
+                    >
+                      View NFT on explorer ↗
+                    </a>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "0.85rem", color: isUnlocked ? "#6ee7b7" : "#fbbf24" }}>
