@@ -2216,7 +2216,7 @@ export default function LpManager() {
               const info = chainId !== null ? NFPM_POSITION_URL[`${chainId}-${pos.nfpmAddr.toLowerCase()}`] : undefined;
               const feeLabel = isSlipstream(protocol)
                 ? `spacing ${pos.fee}`
-                : `${(pos.fee / 10000).toFixed(pos.fee % 100 === 0 ? 0 : 2)}%`;
+                : `${parseFloat((pos.fee / 10000).toFixed(4))}%`;
               const isEmpty = pos.liquidity === 0n;
               return (
                 <div key={pos.tokenId} style={{ padding: "0.85rem 1rem", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, marginBottom: "0.75rem" }}>
