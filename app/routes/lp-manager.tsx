@@ -646,6 +646,7 @@ export default function LpManager() {
   const [myLocks, setMyLocks] = useState<LockInfo[]>([]);
   const [walletPositions, setWalletPositions] = useState<WalletPosition[]>([]);
   const [walletPositionsLoading, setWalletPositionsLoading] = useState(false);
+  const [closingWalletTokenId, setClosingWalletTokenId] = useState<string | null>(null);
   const [lockTxStatus, setLockTxStatus] = useState<LockTxStatus>({ type: "idle" });
   const [outOfRangeWarning, setOutOfRangeWarning] = useState("");
 
@@ -1479,6 +1480,45 @@ export default function LpManager() {
     }
   };
 
+  const handleCloseWalletPosition = async (tokenId: string, nfpmAddr: string) => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress) return;
+    if (!window.confirm(`Close position NFT #${tokenId}? This removes all liquidity and burns the NFT. Tokens are returned to your wallet.`)) return;
+    setClosingWalletTokenId(tokenId);
+    try {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      const nfpm = new ethers.Contract(nfpmAddr, NFPM_CLOSE_ABI, signer);
+
+      const pos = await nfpm.positions(BigInt(tokenId));
+      const liquidity: bigint = pos.liquidity;
+      const deadline = Math.floor(Date.now() / 1000) + 1200;
+      const MAX_U128 = 2n ** 128n - 1n;
+      const iface = new ethers.Interface(NFPM_CLOSE_ABI);
+
+      const calls: string[] = [];
+      if (liquidity > 0n) {
+        calls.push(iface.encodeFunctionData("decreaseLiquidity", [{
+          tokenId: BigInt(tokenId), liquidity, amount0Min: 0n, amount1Min: 0n, deadline,
+        }]));
+      }
+      calls.push(iface.encodeFunctionData("collect", [{
+        tokenId: BigInt(tokenId), recipient: connectedAddress, amount0Max: MAX_U128, amount1Max: MAX_U128,
+      }]));
+      await (await nfpm.multicall(calls)).wait();
+      await (await nfpm.burn(BigInt(tokenId))).wait();
+
+      await fetchWalletPositions();
+    } catch (err: unknown) {
+      const e = err as { code?: number | string; reason?: string; message?: string };
+      if (e.code !== 4001 && e.code !== "ACTION_REJECTED") {
+        alert(`Close failed: ${e.reason ?? e.message ?? "unknown error"}`);
+      }
+    } finally {
+      setClosingWalletTokenId(null);
+    }
+  };
+
   // ─── Validation ──────────────────────────────────────────────────────────────
 
   const amount0Exceeds = !!t0 && !!amount0 && parseFloat(amount0) > parseFloat(t0.balance);
@@ -2244,9 +2284,18 @@ export default function LpManager() {
                           setLockTokenId(pos.tokenId);
                           document.getElementById("nlock-form")?.scrollIntoView({ behavior: "smooth" });
                         }}
+                        disabled={closingWalletTokenId === pos.tokenId}
                         style={{ padding: "0.3rem 0.75rem", background: "#7c3aed", border: "none", borderRadius: 6, color: "white", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}
                       >
                         Lock ↓
+                      </button>
+                      <button
+                        onClick={() => handleCloseWalletPosition(pos.tokenId, pos.nfpmAddr)}
+                        disabled={closingWalletTokenId === pos.tokenId}
+                        title="Remove all liquidity, collect tokens, and burn the NFT"
+                        style={{ padding: "0.3rem 0.75rem", background: "transparent", border: "1px solid rgba(239,68,68,0.5)", borderRadius: 6, color: "#ef4444", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}
+                      >
+                        {closingWalletTokenId === pos.tokenId ? "Closing…" : "Close"}
                       </button>
                     </div>
                   </div>
