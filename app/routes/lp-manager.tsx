@@ -2437,11 +2437,11 @@ export default function LpManager() {
             <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Connect wallet to view your locks.</div>
           )}
 
-          {vaultAddress && connectedAddress && myLocks.length === 0 && (
+          {vaultAddress && connectedAddress && myLocks.filter(l => l.active).length === 0 && (
             <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>No locked positions found.</div>
           )}
 
-          {myLocks.map((lock, i) => {
+          {myLocks.filter(l => l.active).map((lock, i) => {
             const now = Math.floor(Date.now() / 1000);
             const isUnlocked = lock.unlockTime <= now;
             const secondsLeft = lock.unlockTime - now;
