@@ -483,6 +483,11 @@ const NFPM_APPROVE_ABI = [
   "function ownerOf(uint256 tokenId) external view returns (address)",
 ];
 
+const ERC721_ENUM_ABI = [
+  "function balanceOf(address owner) external view returns (uint256)",
+  "function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256)",
+];
+
 // Used for closing a position: read liquidity, remove it, collect, burn
 const NFPM_CLOSE_ABI = [
   "function positions(uint256 tokenId) external view returns (uint96 nonce, address operator, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1)",
@@ -522,6 +527,17 @@ interface LockInfo {
   tokenId: string;
   unlockTime: number; // unix seconds
   active: boolean;
+}
+
+interface WalletPosition {
+  tokenId: string;
+  token0: string;
+  token1: string;
+  token0Symbol: string;
+  token1Symbol: string;
+  fee: number;       // fee tier for Uniswap-style; tickSpacing for Slipstream
+  liquidity: bigint;
+  nfpmAddr: string;
 }
 
 type LockTxStatus =
@@ -628,6 +644,8 @@ export default function LpManager() {
   const [lockUnlockDate, setLockUnlockDate] = useState<string>("");
   const [lockUnlockTime, setLockUnlockTime] = useState<string>("00:00");
   const [myLocks, setMyLocks] = useState<LockInfo[]>([]);
+  const [walletPositions, setWalletPositions] = useState<WalletPosition[]>([]);
+  const [walletPositionsLoading, setWalletPositionsLoading] = useState(false);
   const [lockTxStatus, setLockTxStatus] = useState<LockTxStatus>({ type: "idle" });
   const [outOfRangeWarning, setOutOfRangeWarning] = useState("");
 
@@ -756,6 +774,7 @@ export default function LpManager() {
     setToken0Addr("");
     setToken1Addr("");
     setMyLocks([]);
+    setWalletPositions([]);
   }, [connectedAddress]);
 
   // Reset fee tier when switching protocols if the current fee doesn't exist in the new one
@@ -1252,6 +1271,59 @@ export default function LpManager() {
     }
   }, [connectedAddress, vaultAddress, getEthereum]);
 
+  const fetchWalletPositions = useCallback(async () => {
+    const ethereum = getEthereum();
+    if (!ethereum || !connectedAddress || chainId === null) { setWalletPositions([]); return; }
+    const nfpmAddr = isSlipstream(protocol)
+      ? (SLIPSTREAM_ADDRESSES[chainId]?.nfpm ?? "")
+      : protocol === "pancakeswap"
+      ? (PANCAKESWAP_ADDRESSES[chainId]?.nfpm ?? "")
+      : (UNISWAP_ADDRESSES[chainId]?.nfpm ?? "");
+    if (!nfpmAddr) { setWalletPositions([]); return; }
+    setWalletPositionsLoading(true);
+    try {
+      const provider = new ethers.BrowserProvider(ethereum);
+      const nfpm = new ethers.Contract(nfpmAddr, [...ERC721_ENUM_ABI, ...NFPM_CLOSE_ABI], provider);
+      const balance = Number(await nfpm.balanceOf(connectedAddress));
+      if (balance === 0) { setWalletPositions([]); return; }
+      const tokenIds: bigint[] = await Promise.all(
+        Array.from({ length: balance }, (_, i) => nfpm.tokenOfOwnerByIndex(connectedAddress, i))
+      );
+      const results = await Promise.all(
+        tokenIds.map(async (tokenId) => {
+          try {
+            const pos = await nfpm.positions(tokenId);
+            const erc20 = (addr: string) => new ethers.Contract(addr, ERC20_ABI, provider);
+            const [sym0, sym1] = await Promise.all([
+              erc20(pos.token0).symbol().catch(() => pos.token0.slice(0, 6) + "…"),
+              erc20(pos.token1).symbol().catch(() => pos.token1.slice(0, 6) + "…"),
+            ]);
+            return {
+              tokenId: tokenId.toString(),
+              token0: pos.token0 as string,
+              token1: pos.token1 as string,
+              token0Symbol: sym0 as string,
+              token1Symbol: sym1 as string,
+              fee: Number(pos.fee),
+              liquidity: pos.liquidity as bigint,
+              nfpmAddr,
+            } satisfies WalletPosition;
+          } catch {
+            return null;
+          }
+        })
+      );
+      setWalletPositions(results.filter((p): p is WalletPosition => p !== null));
+    } catch (err) {
+      console.error("fetchWalletPositions error:", err);
+      setWalletPositions([]);
+    } finally {
+      setWalletPositionsLoading(false);
+    }
+  }, [connectedAddress, chainId, protocol, getEthereum]);
+
+  useEffect(() => { fetchWalletPositions(); }, [fetchWalletPositions]);
+
   useEffect(() => {
     fetchMyLocks();
     const interval = setInterval(fetchMyLocks, 30_000);
@@ -1291,7 +1363,7 @@ export default function LpManager() {
 
       setLockTxStatus({ type: "success", message: `NFT #${lockTokenId} locked until ${new Date(`${lockUnlockDate}T${lockUnlockTime || "00:00"}`).toLocaleString()}.` });
       setLockTokenId("");
-      await fetchMyLocks();
+      await Promise.all([fetchMyLocks(), fetchWalletPositions()]);
     } catch (err: unknown) {
       const e = err as { code?: number | string; reason?: string; message?: string };
       if (e.code === 4001 || e.code === "ACTION_REJECTED") {
@@ -2118,8 +2190,74 @@ export default function LpManager() {
           </p>
         </div>
 
+        {/* ── My Wallet Positions (unlocked) ── */}
+        {connectedAddress && (
+          <div style={S.card}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+              <p style={{ ...S.sectionTitle, fontSize: "1.1rem", margin: 0 }}>My Wallet Positions</p>
+              <button
+                onClick={fetchWalletPositions}
+                disabled={walletPositionsLoading}
+                style={{ padding: "0.35rem 0.85rem", background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.35)", borderRadius: 6, color: "var(--accent)", fontSize: "0.8rem", cursor: "pointer" }}
+              >
+                {walletPositionsLoading ? "Loading…" : "Refresh"}
+              </button>
+            </div>
+            <p style={{ ...S.hint, marginBottom: "0.75rem" }}>
+              LP NFTs currently in your wallet (not yet locked). Scoped to the selected protocol on the connected network.
+            </p>
+            {walletPositionsLoading && walletPositions.length === 0 && (
+              <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>Loading positions…</div>
+            )}
+            {!walletPositionsLoading && walletPositions.length === 0 && (
+              <div style={{ color: "#6b7280", fontSize: "0.9rem" }}>No unlocked positions found for this protocol on this network.</div>
+            )}
+            {walletPositions.map((pos) => {
+              const info = chainId !== null ? NFPM_POSITION_URL[`${chainId}-${pos.nfpmAddr.toLowerCase()}`] : undefined;
+              const feeLabel = isSlipstream(protocol)
+                ? `spacing ${pos.fee}`
+                : `${(pos.fee / 10000).toFixed(pos.fee % 100 === 0 ? 0 : 2)}%`;
+              const isEmpty = pos.liquidity === 0n;
+              return (
+                <div key={pos.tokenId} style={{ padding: "0.85rem 1rem", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, marginBottom: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <div>
+                      <span style={{ fontWeight: 600 }}>NFT #{pos.tokenId}</span>
+                      <span style={{ color: "#9ca3af", marginLeft: "0.5rem" }}>
+                        {pos.token0Symbol}/{pos.token1Symbol} · {feeLabel}
+                      </span>
+                      {isEmpty && <span style={{ color: "#ef4444", marginLeft: "0.5rem", fontSize: "0.8rem" }}>· empty (0 liquidity)</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      {info && (
+                        <a
+                          href={info.url(pos.tokenId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: "0.8rem", color: "var(--accent)", textDecoration: "underline" }}
+                        >
+                          View on {info.label} ↗
+                        </a>
+                      )}
+                      <button
+                        onClick={() => {
+                          setLockTokenId(pos.tokenId);
+                          document.getElementById("nlock-form")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        style={{ padding: "0.3rem 0.75rem", background: "#7c3aed", border: "none", borderRadius: 6, color: "white", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}
+                      >
+                        Lock ↓
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── Lock LP Position ── */}
-        <div style={S.card}>
+        <div id="nlock-form" style={S.card}>
           <p style={{ ...S.sectionTitle, fontSize: "1.1rem", marginBottom: "1.25rem" }}>
             Lock LP Position
           </p>
