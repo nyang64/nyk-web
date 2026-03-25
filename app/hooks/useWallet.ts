@@ -89,33 +89,6 @@ export function useWallet() {
     };
   }, []);
 
-  // ── Restore already-connected session on mount ──────────────────────────────
-  useEffect(() => {
-    const checkExisting = async () => {
-      const eth = window.ethereum;
-      if (!eth) return;
-      try {
-        const accounts = (await eth.request({ method: "eth_accounts" })) as string[];
-        if (accounts.length > 0) {
-          setConnectedAddress(accounts[0]);
-          const hex = (await eth.request({ method: "eth_chainId" })) as string;
-          setChainId(parseInt(hex, 16));
-        }
-      } catch {
-        // silent
-      }
-    };
-    checkExisting();
-
-    if (window.ethereum) {
-      attachListeners(window.ethereum);
-    }
-
-    return () => {
-      listenerCleanupRef.current?.();
-    };
-  }, [attachListeners]);
-
   // ── EIP-6963 wallet discovery ───────────────────────────────────────────────
   useEffect(() => {
     const found: EIP6963ProviderDetail[] = [];
@@ -129,6 +102,38 @@ export function useWallet() {
     window.dispatchEvent(new Event("eip6963:requestProvider"));
     return () => window.removeEventListener("eip6963:announceProvider", handle);
   }, []);
+
+  // ── Restore already-connected session on mount ──────────────────────────────
+  // Use the rdns saved in sessionStorage to find the correct EIP-6963 provider
+  // so we never accidentally fall back to window.ethereum (which may be hijacked
+  // by a different wallet extension such as Trust Wallet).
+  useEffect(() => {
+    const savedRdns = sessionStorage.getItem("nyk_wallet_rdns");
+    const restoreSession = async () => {
+      // Find the matching EIP-6963 provider for the previously chosen wallet.
+      const match = savedRdns
+        ? discoveredWallets.find((w) => w.info.rdns === savedRdns)
+        : null;
+      const eth = match?.provider ?? (discoveredWallets.length === 1 ? discoveredWallets[0].provider : null) ?? window.ethereum;
+      if (!eth) return;
+      try {
+        const accounts = (await eth.request({ method: "eth_accounts" })) as string[];
+        if (accounts.length > 0) {
+          activeProviderRef.current = eth;
+          attachListeners(eth);
+          setConnectedAddress(accounts[0]);
+          const hex = (await eth.request({ method: "eth_chainId" })) as string;
+          setChainId(parseInt(hex, 16));
+        }
+      } catch {
+        // silent
+      }
+    };
+    restoreSession();
+    return () => {
+      listenerCleanupRef.current?.();
+    };
+  }, [discoveredWallets, attachListeners]);
 
   // ── Connection helpers ──────────────────────────────────────────────────────
 
@@ -157,6 +162,8 @@ export function useWallet() {
       })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");
       activeProviderRef.current = detail.provider;
+      // Persist chosen wallet so page reload restores the correct provider.
+      sessionStorage.setItem("nyk_wallet_rdns", detail.info.rdns);
       // Re-attach listeners to the newly active provider so chain/account
       // changes are captured regardless of which provider object is active.
       attachListeners(detail.provider);
@@ -234,6 +241,7 @@ export function useWallet() {
     setConnectedAddress(null);
     setChainId(null);
     activeProviderRef.current = null;
+    sessionStorage.removeItem("nyk_wallet_rdns");
   }, []);
 
   return {
