@@ -17,10 +17,17 @@ export default function FAQ() {
 
   // Helper function to render text with bold markdown
   const renderText = (text: string) => {
-    const parts = text.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, i) => 
-      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-    );
+    const parts = text.split(/(\*\*.*?\*\*|\[.*?\]\(.*?\))/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer">{linkMatch[1]}</a>;
+      }
+      return part;
+    });
   };
 
   const faqs = [
@@ -226,6 +233,30 @@ Follow our official channels for updates.`
 • Rewards continue until 40M staking reserve is depleted
 
 Visit the Hashed Lierre page for complete staking details.`
+        },
+        {
+          q: "How do I stake my HLRR tokens?",
+          a: `You can stake HLRR directly via the token contract on Base Mainnet using Blockscout:
+
+1. Go to [HLRR contract on Blockscout](https://base.blockscout.com/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d?tab=write_contract) and connect your wallet (must be on Base Mainnet and hold HLRR)
+2. Find **function 64** in the Write Contract tab
+3. Click **Simulate** first to verify the transaction will succeed
+4. If simulation passes, click **Write** to execute the staking transaction
+5. Confirm the transaction in your wallet
+
+Make sure you have a small amount of ETH on Base Mainnet to cover gas fees.`
+        },
+        {
+          q: "How do I unstake my HLRR tokens?",
+          a: `To unstake HLRR, follow the same process as staking but use a different function:
+
+1. Go to [HLRR contract on Blockscout](https://base.blockscout.com/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d?tab=write_contract) and connect your wallet (must be on Base Mainnet)
+2. Find **function 75** in the Write Contract tab
+3. Click **Simulate** first to verify the transaction will succeed
+4. If simulation passes, click **Write** to execute the unstaking transaction
+5. Confirm the transaction in your wallet
+
+Your HLRR tokens will be returned to your wallet after the transaction confirms.`
         },
         {
           q: "What gives HLRR tokens value?",
