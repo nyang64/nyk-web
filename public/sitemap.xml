@@ -40,4 +40,9 @@
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://www.nyklabs.com/terms</loc>
+    <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+  </url>
 </urlset>
