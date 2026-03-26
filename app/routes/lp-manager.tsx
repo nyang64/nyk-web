@@ -2479,14 +2479,28 @@ export default function LpManager() {
                     <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.2rem" }}>
                       NFPM: {lock.manager.slice(0, 8)}…{lock.manager.slice(-6)}
                     </div>
-                    <a
-                      href={`${basescanBase}/nft/${lock.manager}/${lock.tokenId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: "0.78rem", color: "#6b7280", textDecoration: "none", marginTop: "0.3rem", display: "inline-block" }}
-                    >
-                      View NFT on explorer ↗
-                    </a>
+                    {(() => {
+                      const info = chainId !== null ? NFPM_POSITION_URL[`${chainId}-${lock.manager.toLowerCase()}`] : undefined;
+                      return info ? (
+                        <a
+                          href={info.url(lock.tokenId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: "0.78rem", color: "#6b7280", textDecoration: "none", marginTop: "0.3rem", display: "inline-block" }}
+                        >
+                          View on {info.label} ↗
+                        </a>
+                      ) : (
+                        <a
+                          href={`${basescanBase}/nft/${lock.manager}/${lock.tokenId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: "0.78rem", color: "#6b7280", textDecoration: "none", marginTop: "0.3rem", display: "inline-block" }}
+                        >
+                          View NFT on explorer ↗
+                        </a>
+                      );
+                    })()}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "0.85rem", color: isUnlocked ? "#6ee7b7" : "#fbbf24" }}>
