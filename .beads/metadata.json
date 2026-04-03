@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "nyk_web",
+  "project_id": "2ba29a33-5290-45e8-98e2-62cff63500a0"
+}
