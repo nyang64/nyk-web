@@ -52,73 +52,22 @@ export default function FAQ() {
       category: "HLRR Token Airdrop Allocation",
       questions: [
         {
-          q: "How much HLRR will I receive in the airdrop?",
-          a: `The base airdrop allocation is **100 HLRR tokens** per valid registration with a unique email and wallet address pair.`
+          q: "How is my airdrop allocation calculated?",
+          a: `The base allocation is **100 HLRR tokens** per valid registration. Both your email address and wallet address must be unique — using the same email with different wallets, or the same wallet with different emails, will be rejected. Each fully unique email + wallet pair earns one unit of 100 HLRR.`
         },
         {
-          q: "How does the uniqueness validation work?",
-          a: `Both your email address AND wallet address must be unique:
+          q: "Can I earn more than 100 HLRR?",
+          a: `Yes, there are two ways:
 
-• **One email + One wallet = One unit (100 HLRR)**
-• You cannot use the same email with different wallets
-• You cannot use the same wallet with different emails
-• Each unique email AND wallet pair = one airdrop unit
+**Multiple unique registrations** — each completely unique email + wallet pair earns 100 HLRR.
 
-To receive multiple airdrop units, you must register with completely unique email and wallet combinations.`
+**Referrals (recommended)** — after registration you receive a unique 8-character referral code. Share it with friends: when they register using your code, both of you earn **+50 HLRR**. There is no cap on referrals.`
         },
         {
-          q: "Can I get more than 100 HLRR tokens?",
-          a: `Yes! There are two ways to increase your airdrop allocation:
+          q: "How do referrals work, and what happens if I enter an invalid code?",
+          a: `After successful registration your referral code is displayed and emailed to you. When someone uses it during their registration, both parties automatically receive +50 HLRR.
 
-**Method 1: Multiple Unique Registrations**
-Register with different unique email AND wallet pairs. Each valid pair receives 100 HLRR.
-
-**Method 2: Referrals (Recommended)**
-Refer friends and family using your referral code:
-• You receive an additional **50 HLRR** per successful referral
-• Your friend also receives **50 HLRR bonus**
-• No limit on referrals
-• Much easier than managing multiple email/wallet pairs!`
-        },
-        {
-          q: "How do referrals work?",
-          a: `The referral system works as follows:
-
-**When You Register:**
-1. Complete the registration form
-2. You'll receive a unique referral code
-3. Save this code and share it with friends and family
-
-**When Someone Uses Your Code:**
-• They enter your referral code during registration
-• Both you and your friend receive **+50 HLRR bonus**
-• The bonus is tracked automatically
-
-**Important Notes:**
-• If you weren't referred by anyone, leave the referral field BLANK
-• If you enter an invalid referral code, registration will fail
-• The backend validates all referral codes
-• Only use a referral code if someone actually referred you`
-        },
-        {
-          q: "What if I enter a wrong referral code?",
-          a: `If you enter an invalid or non-existent referral code, your registration will be rejected by the backend. The system validates referral codes in real-time and performs accounting to ensure:
-
-• The referral code exists
-• Both parties receive their bonuses correctly
-• No fraudulent referrals are processed
-
-**Best Practice**: Only enter a referral code if someone gave it to you. If you're registering on your own, leave it blank.`
-        },
-        {
-          q: "Can I check how many tokens I'll receive?",
-          a: `Yes! We will provide a link where you can check your total airdrop allocation soon. This will show:
-
-• Base allocation (100 HLRR)
-• Referral bonuses earned
-• Total HLRR tokens you'll receive
-
-Stay tuned for the announcement of this feature.`
+**If you were not referred by anyone, leave the referral field blank.** Entering an invalid or non-existent code causes registration to fail — the backend validates all codes in real-time and rejects bad ones to prevent fraudulent referrals.`
         }
       ]
     },
@@ -143,41 +92,18 @@ If you're still uncomfortable with the verification process, you have two option
 This way, even if you have concerns, you can still participate without risking your main wallet.`
         },
         {
-          q: "Which blockchain networks are supported for wallets?",
-          a: `We support wallets on the following networks:
-
-• Ethereum
-• Base
-• Binance Smart Chain
-
-Make sure your wallet is compatible with the network you select. You will NOT receive HLRR tokens if your wallet cannot connect to the chosen network.`
-        },
-        {
-          q: "What wallet should I use?",
-          a: `You can use any Web3 wallet that supports the blockchain networks we support (Ethereum, Base, Binance Smart Chain). Popular options include MetaMask, Trust Wallet, or Coinbase Wallet. You'll need MetaMask or a similar browser extension wallet to complete the verification process.`
+          q: "Which wallet and network do I need?",
+          a: `HLRR is available exclusively on the **Base network**. Use any Web3 wallet that supports Base — MetaMask, Coinbase Wallet, and Trust Wallet are popular options. You'll need a small amount of ETH on Base to cover gas fees when claiming tokens.`
         },
         {
           q: "Do I need to verify my email?",
-          a: `Yes, email verification is required. After registration:
+          a: `Yes, email verification is required. After registration, click the verification link sent to your inbox. Check your spam folder if it doesn't arrive — Gmail is preferred, as some providers (especially Yahoo) may have delivery issues. If not received after 10 minutes, try registering with a different email address.
 
-1. Check your inbox for a verification email from NYK Labs
-2. Click the verification link in the email
-3. You'll be redirected to a confirmation page
-4. Your registration is complete once verified
-
-Without email verification, you will not be eligible for the airdrop.`
-        },
-        {
-          q: "I don't see my email verification. What should I do?",
-          a: `Check your spam or junk folder. Gmail is preferred as some email providers (especially Yahoo) may have deliverability issues. If you still don't receive it after 10 minutes, you may need to register again with a different email address.`
+Without email verification you will not be eligible for the airdrop.`
         },
         {
           q: "Can I register multiple times?",
           a: `No, each email address and wallet address can only be registered once. Multiple registrations with the same information will be rejected.`
-        },
-        {
-          q: "What is the referral code and how does it work?",
-          a: `After successful registration, you'll receive a unique 8-character referral code. Share this code with friends - when they use your code during registration, both you and your friend will earn bonus airdrops.`
         },
         {
           q: "What happens after I register?",
@@ -196,27 +122,14 @@ Without email verification, you will not be eligible for the airdrop.`
       category: "Token Distribution & Claims",
       questions: [
         {
-          q: "When will I receive my tokens?",
-          a: `Token distribution dates will be announced on our X (Twitter) and Discord channels. Make sure to follow our social media for updates on when and how to claim your airdrop.`
-        },
-        {
-          q: "When will the airdrop be distributed?",
-          a: `The airdrop distribution date will be announced once registration closes. All verified participants will receive email notifications with:
+          q: "When and how will tokens be distributed?",
+          a: `The distribution date will be announced on our X (Twitter) and Discord channels once registration closes. Verified participants will also receive an email with the distribution schedule, step-by-step claiming instructions, and staking information.
 
-• Distribution schedule
-• Instructions for claiming tokens
-• Wallet setup guidance (if needed)
-• Staking information
-
-Follow our official channels for updates.`
+To claim, you will connect the same wallet you registered with. Follow our official channels for the announcement.`
         },
         {
-          q: "How do I claim my tokens?",
-          a: `Claiming instructions will be provided through our official channels (X and Discord) closer to the distribution date. You'll need to connect the same wallet you registered with to claim your tokens.`
-        },
-        {
-          q: "Do I need to pay anything to claim my tokens?",
-          a: `The tokens themselves are free, but you'll need to pay blockchain gas fees to claim them. Gas fees vary depending on network congestion and which blockchain you selected (Ethereum, Base, or Binance Smart Chain).`
+          q: "Is there any cost to claim my tokens?",
+          a: `The tokens themselves are free. You will need a small amount of ETH on Base to cover on-chain gas fees when claiming.`
         }
       ]
     },
@@ -236,27 +149,37 @@ Visit the Hashed Lierre page for complete staking details.`
         },
         {
           q: "How do I stake my HLRR tokens?",
-          a: `You can stake HLRR directly via the token contract on Base Mainnet using Blockscout:
+          a: `Visit the [Hashed Lierre page](/hashed-lierre) and connect your wallet (must be on Base Mainnet and hold HLRR).
 
-1. Go to [HLRR contract on Blockscout](https://base.blockscout.com/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d?tab=write_contract) and connect your wallet (must be on Base Mainnet and hold HLRR)
-2. Find **function 64** in the Write Contract tab
-3. Click **Simulate** first to verify the transaction will succeed
-4. If simulation passes, click **Write** to execute the staking transaction
-5. Confirm the transaction in your wallet
+Under **HLRR Staking**, enter the amount you want to stake and click **Stake HLRR**. Confirm the transaction in your wallet.
 
-Make sure you have a small amount of ETH on Base Mainnet to cover gas fees.`
+**Notes:**
+• Minimum stake: 100 HLRR
+• Any accrued rewards are automatically compounded into your staked balance before the new stake is added
+• A 14-day lock period begins from your **first ever** stake — additional stakes do not reset this timer
+• You need a small amount of ETH on Base Mainnet to cover gas fees`
         },
         {
           q: "How do I unstake my HLRR tokens?",
-          a: `To unstake HLRR, follow the same process as staking but use a different function:
+          a: `Visit the [Hashed Lierre page](/hashed-lierre) and connect your wallet (must be on Base Mainnet).
 
-1. Go to [HLRR contract on Blockscout](https://base.blockscout.com/address/0x5E1583d48bcFd60de77138ea195f3EFbe128405d?tab=write_contract) and connect your wallet (must be on Base Mainnet)
-2. Find **function 75** in the Write Contract tab
-3. Click **Simulate** first to verify the transaction will succeed
-4. If simulation passes, click **Write** to execute the unstaking transaction
-5. Confirm the transaction in your wallet
+Under **Unstake**, you have two options:
 
-Your HLRR tokens will be returned to your wallet after the transaction confirms.`
+**Partial unstake** — enter the amount you want to withdraw (up to your current staked balance) and click **Unstake Amount**. Accrued rewards continue on the remaining stake.
+
+**Unstake All** — click **Unstake All & Claim Rewards** to receive everything: your full staked balance plus all accrued rewards. If you have pending rewards, this requires 2 wallet confirmations (one to compound rewards, one to unstake).
+
+**Note:** You can only unstake after **14 days** have elapsed since your first stake.`
+        },
+        {
+          q: "How do I claim staking rewards?",
+          a: `Staking rewards on HLRR **auto-compound** — they are added to your staked balance, not sent to your wallet separately.
+
+The easiest way to collect rewards is to use **Unstake All** on the [Hashed Lierre page](/hashed-lierre), which compounds all accrued rewards and returns your full balance in one flow.
+
+If you want to compound rewards without unstaking, the rewards are automatically included the next time you stake additional tokens, or you can trigger compounding manually via the contract's claimReward() function on Blockscout.
+
+Reward formula: **12% APR** in Years 1–2, reducing by 2% per year until reaching 4% (Year 6 onwards).`
         },
         {
           q: "What gives HLRR tokens value?",

@@ -15,7 +15,7 @@ export function meta({}: Route.MetaArgs) {
 // ─── Kill switch ──────────────────────────────────────────────────────────────
 // Set to false to disable the presale UI globally (works even for cached pages
 // because this flag is evaluated at runtime from the deployed bundle).
-const PRESALE_ENABLED = false;
+const PRESALE_ENABLED = true;
 
 // Presale configuration
 const HLRR_PRICE_USD = 0.075; // $0.075 per HLRR

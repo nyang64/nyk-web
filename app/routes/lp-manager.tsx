@@ -474,8 +474,17 @@ const UNISWAP_POOL_ABI = [
   "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, uint8, bool)",
 ];
 
+// Aerodrome / Velodrome Slipstream CLPool drops feeProtocol → 6 return values, not 7
+const CL_POOL_ABI = [
+  "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)",
+];
+
 const NFPM_AERODROME_ABI = [
   "function mint((address token0, address token1, int24 tickSpacing, int24 tickLower, int24 tickUpper, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address recipient, uint256 deadline, uint160 sqrtPriceX96)) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)",
+];
+
+const CL_FACTORY_ABI = [
+  "function getPool(address tokenA, address tokenB, int24 tickSpacing) external view returns (address pool)",
 ];
 
 const NFPM_APPROVE_ABI = [
@@ -535,8 +544,13 @@ interface WalletPosition {
   token1: string;
   token0Symbol: string;
   token1Symbol: string;
+  token0Decimals: number;
+  token1Decimals: number;
   fee: number;       // fee tier for Uniswap-style; tickSpacing for Slipstream
+  tickLower: number;
+  tickUpper: number;
   liquidity: bigint;
+  sqrtPriceX96: bigint | null; // current pool price; null if pool unavailable
   nfpmAddr: string;
 }
 
@@ -699,7 +713,13 @@ export default function LpManager() {
   // pool's internal direction.  We accept prices in the user's direction and invert internally.
   const pairSwapped = !!(t0 && t1 && t0.address.toLowerCase() > t1.address.toLowerCase());
 
-  const feeOptions = protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS;
+  const HLRR_BASE_MAINNET = "0x5e1583d48bcfd60de77138ea195f3efbe128405d";
+  const USDC_BASE_MAINNET = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+  const isHlrrUsdcPair = chainId === CHAIN.BASE_MAINNET &&
+    [token0Addr.toLowerCase(), token1Addr.toLowerCase()].includes(HLRR_BASE_MAINNET) &&
+    [token0Addr.toLowerCase(), token1Addr.toLowerCase()].includes(USDC_BASE_MAINNET);
+  const feeOptions = (protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS)
+    .filter((o) => !(protocol === "uniswap" && isHlrrUsdcPair && o.fee === 10000));
 
   const tickSpacing =
     isSlipstream(protocol)
@@ -778,13 +798,19 @@ export default function LpManager() {
     setWalletPositions([]);
   }, [connectedAddress]);
 
-  // Reset fee tier when switching protocols if the current fee doesn't exist in the new one
+  // Reset fee tier if the current selection is no longer available (e.g. 1% excluded for HLRR/USDC on Base Mainnet)
   useEffect(() => {
-    const opts = protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS;
+    const hlrrBase = "0x5e1583d48bcfd60de77138ea195f3efbe128405d";
+    const usdcBase = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+    const pairIsHlrrUsdc = chainId === CHAIN.BASE_MAINNET &&
+      [token0Addr.toLowerCase(), token1Addr.toLowerCase()].includes(hlrrBase) &&
+      [token0Addr.toLowerCase(), token1Addr.toLowerCase()].includes(usdcBase);
+    const opts = (protocol === "pancakeswap" ? PANCAKESWAP_FEE_OPTIONS : UNISWAP_FEE_OPTIONS)
+      .filter((o) => !(protocol === "uniswap" && pairIsHlrrUsdc && o.fee === 10000));
     if (protocol !== "aerodrome" && !opts.find((o) => o.fee === selectedFee)) {
-      setSelectedFee(10000);
+      setSelectedFee(opts[opts.length - 1]?.fee ?? 3000);
     }
-  }, [protocol]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [protocol, chainId, token0Addr, token1Addr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear success status when any LP creation form field changes
   useEffect(() => {
@@ -847,9 +873,25 @@ export default function LpManager() {
   };
 
   const switchAccount = () => {
+    // Reset all page state to defaults before opening the wallet picker
     setWalletTokens([]);
     setToken0Addr("");
     setToken1Addr("");
+    setCustomTokenInput("");
+    setCustomTokenError("");
+    setStartingPrice("");
+    setMinPrice("");
+    setMaxPrice("");
+    setAmount0("");
+    setAmount1("");
+    setTxStatus({ type: "idle" });
+    setMyLocks([]);
+    setWalletPositions([]);
+    setLockTokenId("");
+    setLockUnlockDate("");
+    setLockUnlockTime("00:00");
+    setLockTxStatus({ type: "idle" });
+    setOutOfRangeWarning("");
     walletSwitchAccount();
   };
 
@@ -1191,7 +1233,20 @@ export default function LpManager() {
         const tx = await nfpm.multicall(calls, { value: ethValue });
         receipt = await tx.wait();
       } else {
-        // Slipstream (Aerodrome on Base, Velodrome on Optimism) — identical interface
+        // Slipstream (Aerodrome on Base, Velodrome on Optimism) — identical interface.
+        // If the pool already exists, sqrtPriceX96 must be 0 — passing a non-zero value
+        // causes the NFPM to call CLFactory.createPool() which reverts on an existing pool.
+        const clFactoryAddress = SLIPSTREAM_ADDRESSES[chainId]?.clFactory ?? "";
+        let mintSqrtPrice = sqrtPrice;
+        if (clFactoryAddress) {
+          const clFactory = new ethers.Contract(clFactoryAddress, CL_FACTORY_ABI, provider);
+          const existingPool: string = await clFactory.getPool(
+            localSorted0.address, localSorted1.address, tickSpacing
+          );
+          if (existingPool !== ethers.ZeroAddress) {
+            mintSqrtPrice = 0n;
+          }
+        }
         setTxStatus({ type: "minting" });
         const nfpm = new ethers.Contract(nfpmAddress, NFPM_AERODROME_ABI, signer);
         const tx = await nfpm.mint({
@@ -1206,7 +1261,7 @@ export default function LpManager() {
           amount1Min: 0n,
           recipient: connectedAddress,
           deadline,
-          sqrtPriceX96: sqrtPrice,
+          sqrtPriceX96: mintSqrtPrice,
         });
         receipt = await tx.wait();
       }
@@ -1229,6 +1284,8 @@ export default function LpManager() {
 
       setTxStatus({ type: "success", txHash: receipt.hash, tokenId });
       if (tokenId !== "unknown") setLockTokenId(tokenId);
+      setAmount0("");
+      setAmount1("");
       fetchWalletTokens();
     } catch (err: unknown) {
       const e = err as { code?: number | string; reason?: string; message?: string };
@@ -1295,18 +1352,58 @@ export default function LpManager() {
           try {
             const pos = await nfpm.positions(tokenId);
             const erc20 = (addr: string) => new ethers.Contract(addr, ERC20_ABI, provider);
-            const [sym0, sym1] = await Promise.all([
+            const tickSpacingOrFee = Number(pos.fee);
+
+            // Fetch pool sqrtPriceX96 for amount calculation (parallel with token metadata)
+            const poolStatePromise: Promise<bigint | null> = (async () => {
+              try {
+                let poolAddr: string = ethers.ZeroAddress;
+                if (isSlipstream(protocol)) {
+                  const factoryAddr = SLIPSTREAM_ADDRESSES[chainId]?.clFactory ?? "";
+                  if (factoryAddr) {
+                    const factory = new ethers.Contract(factoryAddr, CL_FACTORY_ABI, provider);
+                    poolAddr = await factory.getPool(pos.token0, pos.token1, tickSpacingOrFee);
+                  }
+                } else {
+                  const addrs = protocol === "pancakeswap"
+                    ? PANCAKESWAP_ADDRESSES[chainId]
+                    : UNISWAP_ADDRESSES[chainId];
+                  if (addrs) {
+                    const factory = new ethers.Contract(addrs.factory, UNISWAP_FACTORY_ABI, provider);
+                    poolAddr = await factory.getPool(pos.token0, pos.token1, tickSpacingOrFee);
+                  }
+                }
+                if (poolAddr === ethers.ZeroAddress) return null;
+                const poolAbi = isSlipstream(protocol) ? CL_POOL_ABI : UNISWAP_POOL_ABI;
+                const pool = new ethers.Contract(poolAddr, poolAbi, provider);
+                const [sqrtPriceX96] = await pool.slot0();
+                return sqrtPriceX96 as bigint;
+              } catch {
+                return null;
+              }
+            })();
+
+            const [sym0, sym1, dec0, dec1, sqrtPriceX96] = await Promise.all([
               erc20(pos.token0).symbol().catch(() => pos.token0.slice(0, 6) + "…"),
               erc20(pos.token1).symbol().catch(() => pos.token1.slice(0, 6) + "…"),
+              erc20(pos.token0).decimals().catch(() => 18),
+              erc20(pos.token1).decimals().catch(() => 18),
+              poolStatePromise,
             ]);
+
             return {
               tokenId: tokenId.toString(),
               token0: pos.token0 as string,
               token1: pos.token1 as string,
               token0Symbol: sym0 as string,
               token1Symbol: sym1 as string,
-              fee: Number(pos.fee),
+              token0Decimals: Number(dec0),
+              token1Decimals: Number(dec1),
+              fee: tickSpacingOrFee,
+              tickLower: Number(pos.tickLower),
+              tickUpper: Number(pos.tickUpper),
               liquidity: pos.liquidity as bigint,
+              sqrtPriceX96: sqrtPriceX96 ?? null,
               nfpmAddr,
             } satisfies WalletPosition;
           } catch {
@@ -2258,6 +2355,43 @@ export default function LpManager() {
                 ? `spacing ${pos.fee}`
                 : `${parseFloat((pos.fee / 10000).toFixed(4))}%`;
               const isEmpty = pos.liquidity === 0n;
+
+              // Convert ticks to human-readable prices (token1 per token0, pool's sorted direction)
+              const tickToPrice = (tick: number) =>
+                Math.pow(1.0001, tick) * Math.pow(10, pos.token0Decimals - pos.token1Decimals);
+              const fmtPrice = (p: number) =>
+                p >= 1000 ? p.toFixed(2) : p >= 1 ? p.toFixed(4) : p.toPrecision(4);
+              const priceLower = fmtPrice(tickToPrice(pos.tickLower));
+              const priceUpper = fmtPrice(tickToPrice(pos.tickUpper));
+
+              // Compute token amounts from liquidity using Uniswap V3 math
+              const Q96 = 2n ** 96n;
+              const sqrtP = pos.sqrtPriceX96;
+              const L = pos.liquidity;
+              const sqrtA = BigInt(Math.floor(Math.sqrt(Math.pow(1.0001, pos.tickLower)) * 2 ** 96));
+              const sqrtB = BigInt(Math.floor(Math.sqrt(Math.pow(1.0001, pos.tickUpper)) * 2 ** 96));
+              let amount0Raw = 0n;
+              let amount1Raw = 0n;
+              if (sqrtP !== null && L > 0n) {
+                if (sqrtP <= sqrtA) {
+                  amount0Raw = (L * Q96 * (sqrtB - sqrtA)) / (sqrtA * sqrtB);
+                } else if (sqrtP >= sqrtB) {
+                  amount1Raw = (L * (sqrtB - sqrtA)) / Q96;
+                } else {
+                  amount0Raw = (L * Q96 * (sqrtB - sqrtP)) / (sqrtP * sqrtB);
+                  amount1Raw = (L * (sqrtP - sqrtA)) / Q96;
+                }
+              }
+              const inRange = sqrtP !== null ? sqrtP >= sqrtA && sqrtP < sqrtB : null;
+
+              const fmtAmount = (raw: bigint, decimals: number) => {
+                const d = 10n ** BigInt(decimals);
+                const whole = raw / d;
+                const frac = raw % d;
+                const fracStr = frac.toString().padStart(decimals, "0").slice(0, 4).replace(/0+$/, "");
+                return fracStr ? `${whole}.${fracStr}` : `${whole}`;
+              };
+
               return (
                 <div key={pos.tokenId} style={{ padding: "0.85rem 1rem", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, marginBottom: "0.75rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -2266,7 +2400,9 @@ export default function LpManager() {
                       <span style={{ color: "#9ca3af", marginLeft: "0.5rem" }}>
                         {pos.token0Symbol}/{pos.token1Symbol} · {feeLabel}
                       </span>
-                      {isEmpty && <span style={{ color: "#ef4444", marginLeft: "0.5rem", fontSize: "0.8rem" }}>· empty (0 liquidity)</span>}
+                      {isEmpty && <span style={{ color: "#ef4444", marginLeft: "0.5rem", fontSize: "0.8rem" }}>· empty</span>}
+                      {inRange === true && <span style={{ color: "#22c55e", marginLeft: "0.5rem", fontSize: "0.75rem", fontWeight: 600 }}>● In Range</span>}
+                      {inRange === false && <span style={{ color: "#f59e0b", marginLeft: "0.5rem", fontSize: "0.75rem", fontWeight: 600 }}>● Out of Range</span>}
                     </div>
                     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       {info && (
@@ -2298,6 +2434,30 @@ export default function LpManager() {
                         {closingWalletTokenId === pos.tokenId ? "Closing…" : "Close"}
                       </button>
                     </div>
+                  </div>
+                  {/* Price range + amounts row */}
+                  <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#9ca3af", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+                    <span>
+                      Range:{" "}
+                      <span style={{ color: "#e5e7eb" }}>{priceLower} – {priceUpper} {pos.token1Symbol}/{pos.token0Symbol}</span>
+                    </span>
+                    {sqrtP !== null && (() => {
+                      const currentPrice = (Number(sqrtP) / 2 ** 96) ** 2 * Math.pow(10, pos.token0Decimals - pos.token1Decimals);
+                      return (
+                        <span>
+                          Current:{" "}
+                          <span style={{ color: "#e5e7eb" }}>{fmtPrice(currentPrice)} {pos.token1Symbol}/{pos.token0Symbol}</span>
+                        </span>
+                      );
+                    })()}
+                    <span>
+                      {pos.token0Symbol}:{" "}
+                      <span style={{ color: "#e5e7eb" }}>{fmtAmount(amount0Raw, pos.token0Decimals)}</span>
+                    </span>
+                    <span>
+                      {pos.token1Symbol}:{" "}
+                      <span style={{ color: "#e5e7eb" }}>{fmtAmount(amount1Raw, pos.token1Decimals)}</span>
+                    </span>
                   </div>
                 </div>
               );

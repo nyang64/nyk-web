@@ -91,6 +91,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               )}
             </li>
             <li>
+              <NavLink to="/nswap">nSwap</NavLink>
+            </li>
+            <li>
               <NavLink to="/puzzle">Daily Puzzle</NavLink>
             </li>
             <li>
