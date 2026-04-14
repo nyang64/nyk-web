@@ -410,8 +410,17 @@ export default function NSwap() {
         ]);
       } catch (waitErr: any) {
         if (waitErr?.message === "__timeout__") {
-          // Tx was submitted; we just couldn't confirm it in time.
-          // Treat as success so user can check Basescan and we refresh state.
+          // Before declaring success, verify the tx actually reached the network.
+          // On Base (2s blocks), a real tx confirms in seconds — 90s timeout almost
+          // always means the wallet signed but didn't broadcast.
+          const onChainTx = await provider.getTransaction(tx.hash).catch(() => null);
+          if (!onChainTx) {
+            setTxStatus({
+              type: "error",
+              msg: "Transaction was not found on-chain. Your wallet may have signed but not broadcast it — check your wallet's transaction history and try again.",
+            });
+            return;
+          }
           setTxStatus({
             type: "success",
             msg: "Swap submitted — confirmation is taking longer than usual. Check Basescan for status.",
