@@ -92,7 +92,7 @@ type TxStatus =
   | { type: "idle" }
   | { type: "pending"; msg: string; hash?: string }
   | { type: "success"; msg: string; hash?: string }
-  | { type: "error"; msg: string };
+  | { type: "error"; msg: string; hash?: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -413,12 +413,31 @@ export default function NSwap() {
           // Before declaring success, verify the tx actually reached the network.
           // On Base (2s blocks), a real tx confirms in seconds — 90s timeout almost
           // always means the wallet signed but didn't broadcast.
-          const onChainTx = await provider.getTransaction(tx.hash).catch(() => null);
-          if (!onChainTx) {
+          // Check both mempool (getTransaction) and mined (getTransactionReceipt) to
+          // avoid a false negative when the tx was mined and is no longer in mempool.
+          const [onChainTx, receipt] = await Promise.all([
+            provider.getTransaction(tx.hash).catch(() => null),
+            provider.getTransactionReceipt(tx.hash).catch(() => null),
+          ]);
+          if (!onChainTx && !receipt) {
             setTxStatus({
               type: "error",
               msg: "Transaction was not found on-chain. Your wallet may have signed but not broadcast it — check your wallet's transaction history and try again.",
+              hash: tx.hash,
             });
+            return;
+          }
+          if (receipt) {
+            // Already mined — treat as success
+            setTxStatus({
+              type: "success",
+              msg: `Swapped ${amountIn} ${tokenInSym} → ${estimatedOut ?? "?"} ${tokenOutSym}`,
+              hash: receipt.hash,
+            });
+            setAmountIn("");
+            setEstimatedOut(null);
+            await fetchBalances();
+            await findPool();
             return;
           }
           setTxStatus({
@@ -704,7 +723,7 @@ export default function NSwap() {
             color: txStatus.type === "success" ? "#4ade80" : txStatus.type === "error" ? "#f87171" : "var(--accent)",
           }}>
             {txStatus.msg}
-            {(txStatus.type === "success" || txStatus.type === "pending") && (txStatus as any).hash && (
+            {(txStatus.type === "success" || txStatus.type === "pending" || txStatus.type === "error") && (txStatus as any).hash && (
               <a
                 href={`https://basescan.org/tx/${(txStatus as any).hash}`}
                 target="_blank"
