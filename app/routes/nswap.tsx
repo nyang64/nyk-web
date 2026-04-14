@@ -351,11 +351,32 @@ export default function NSwap() {
         await tx.wait();
       }
 
-      // Compute minimum output using raw quoted amount (avoids re-parsing precision loss)
+      // Re-quote live at swap time so amountOutMin reflects current tick state,
+      // not a potentially stale estimate from the UI (prevents silent revert when
+      // the swap amount crosses a tick boundary since the last quote).
+      setTxStatus({ type: "pending", msg: "Fetching live quote…" });
+      let liveOutRaw: bigint | null = null;
+      try {
+        const quoter = new ethers.Contract(AERODROME_CL_QUOTER, QUOTER_ABI, provider);
+        const [amountOut] = await quoter.quoteExactInputSingle.staticCall({
+          tokenIn:           tokenInAddr,
+          tokenOut:          tokenOutAddr,
+          amountIn:          amountInRaw,
+          tickSpacing,
+          sqrtPriceLimitX96: BigInt(0),
+        });
+        liveOutRaw = BigInt(amountOut.toString());
+      } catch {
+        // Quoter unavailable — fall back to cached UI estimate
+        liveOutRaw = estimatedOutRaw;
+      }
+
+      // Compute minimum output using live quote (avoids re-parsing precision loss)
       let amountOutMin = BigInt(0);
-      if (estimatedOutRaw !== null && estimatedOutRaw > BigInt(0)) {
+      const baseOutRaw = liveOutRaw ?? estimatedOutRaw;
+      if (baseOutRaw !== null && baseOutRaw > BigInt(0)) {
         const slippageBps = Math.round(parseFloat(slippage) * 100);
-        amountOutMin = (estimatedOutRaw * BigInt(10000 - slippageBps)) / BigInt(10000);
+        amountOutMin = (baseOutRaw * BigInt(10000 - slippageBps)) / BigInt(10000);
       }
 
       setTxStatus({ type: "pending", msg: "Waiting for wallet confirmation…" });
@@ -415,7 +436,12 @@ export default function NSwap() {
       await fetchBalances();
       await findPool(); // refresh price
     } catch (err: any) {
-      const msg = err?.reason ?? err?.data?.message ?? err?.message ?? "Transaction failed";
+      let msg: string;
+      if (err?.code === "CALL_EXCEPTION" && err?.action === "estimateGas") {
+        msg = "Swap would fail on-chain — the price likely moved beyond your slippage tolerance. Try increasing slippage % and swap again.";
+      } else {
+        msg = err?.reason ?? err?.data?.message ?? err?.message ?? "Transaction failed";
+      }
       setTxStatus({ type: "error", msg });
     }
   }, [
