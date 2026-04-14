@@ -64,12 +64,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <li>
               <NavLink to="/product">DeID Replicator</NavLink>
             </li>
-            <li>
-              <NavLink to="/lp-manager">LP Manager</NavLink>
-            </li>
-            <li>
-              <NavLink to="/purchase-crypto">On/Off Ramp</NavLink>
-            </li>
             <li
               className="dropdown"
               onMouseEnter={() => setHashedLierreOpen(true)}
@@ -89,6 +83,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </li>
                 </ul>
               )}
+            </li>
+            <li>
+              <NavLink to="/purchase-crypto">On/Off Ramp</NavLink>
+            </li>
+            <li>
+              <NavLink to="/lp-manager">nRange/nLock</NavLink>
             </li>
             <li>
               <NavLink to="/nswap">nSwap</NavLink>
