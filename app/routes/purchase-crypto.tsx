@@ -31,13 +31,11 @@ export default function PurchaseCrypto() {
       alert('Please enter a valid amount');
       return;
     }
-
     const moonpayUrl = new URL(MOONPAY_BUY_URL);
     moonpayUrl.searchParams.append('apiKey', MOONPAY_API_KEY);
     moonpayUrl.searchParams.append('currencyCode', cryptoCurrency);
     moonpayUrl.searchParams.append('baseCurrencyCode', currency.toLowerCase());
     moonpayUrl.searchParams.append('baseCurrencyAmount', amount);
-
     setIframeUrl(moonpayUrl.href);
     setShowModal(true);
   };
@@ -47,13 +45,11 @@ export default function PurchaseCrypto() {
       alert('Please enter a valid amount');
       return;
     }
-
     const moonpayUrl = new URL(MOONPAY_SELL_URL);
     moonpayUrl.searchParams.append('apiKey', MOONPAY_API_KEY);
     moonpayUrl.searchParams.append('baseCurrencyCode', cryptoCurrency);
     moonpayUrl.searchParams.append('baseCurrencyAmount', amount);
     moonpayUrl.searchParams.append('quoteCurrencyCode', currency.toLowerCase());
-
     setIframeUrl(moonpayUrl.href);
     setShowModal(true);
   };
@@ -73,107 +69,73 @@ export default function PurchaseCrypto() {
 
   const isDisabled = !amount || parseFloat(amount) <= 0 || !disclaimerAgreed;
 
+  const onRampSteps = [
+    { label: 'Bank (USD)', icon: '🏦' },
+    { label: 'ACH Transfer', arrow: true },
+    { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
+    { label: 'Convert to USDC', arrow: true },
+    { label: 'Withdraw via Base network', arrow: true },
+    { label: 'Self-Custody Wallet', icon: '👛' },
+    { label: 'Aerodrome Swap → ETH', arrow: true, link: 'https://aerodrome.finance/swap' },
+  ];
+
+  const offRampSteps = [
+    { label: 'Self-Custody Wallet', icon: '👛' },
+    { label: 'Aerodrome Swap → USDC', arrow: true, link: 'https://aerodrome.finance/swap' },
+    { label: 'Withdraw to CEX via Base', arrow: true },
+    { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
+    { label: 'Convert USDC → USD', arrow: true },
+    { label: 'ACH Transfer', arrow: true },
+    { label: 'Bank (USD)', icon: '🏦' },
+  ];
+
   return (
     <main>
       <div className="card">
         <h2>On / Off Ramp</h2>
 
-        {/* Most Economic Path Advisory */}
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.07)',
-          border: '1px solid rgba(16, 185, 129, 0.35)',
-          borderRadius: '10px',
-          padding: '1.25rem 1.5rem',
-          marginBottom: '2rem',
-        }}>
-          <h3 style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '1rem' }}>
-            Most Economic Path
-          </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '1rem', lineHeight: '1.6' }}>
+        {/* Most Economic Path */}
+        <div className="ramp-advisory">
+          <h3>Most Economic Path</h3>
+          <p className="ramp-advisory-desc">
             Credit card and instant-buy services charge 2–5% fees. The cheapest way to move fiat into
             crypto — and back — is via the ACH route below. Fees are typically under 0.5% end-to-end.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {/* On-ramp */}
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 600, color: '#10b981', fontSize: '0.85rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                On-Ramp (Fiat → Crypto)
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
-                {[
-                  { label: 'Bank (USD)', icon: '🏦' },
-                  { label: 'ACH Transfer', icon: '→', muted: true },
-                  { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
-                  { label: 'Convert to USDC', icon: '→', muted: true },
-                  { label: 'Withdraw via Base network', icon: '→', muted: true },
-                  { label: 'Self-Custody Wallet', icon: '👛' },
-                  { label: 'Aerodrome Swap → ETH', icon: '→', muted: true, link: 'https://aerodrome.finance/swap' },
-                ].map((step, i) =>
-                  step.muted ? (
-                    <span key={i} style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                      {step.link
-                        ? <a href={step.link} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'underline' }}>{step.label}</a>
-                        : step.label}
-                    </span>
-                  ) : (
-                    <span key={i} style={{
-                      background: 'rgba(16, 185, 129, 0.12)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: '6px',
-                      padding: '0.2rem 0.6rem',
-                      fontSize: '0.85rem',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {step.icon} {step.label}
-                    </span>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Off-ramp */}
-            <div>
-              <div style={{ fontWeight: 600, color: '#60a5fa', fontSize: '0.85rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Off-Ramp (Crypto → Fiat)
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem' }}>
-                {[
-                  { label: 'Self-Custody Wallet', icon: '👛' },
-                  { label: 'Aerodrome Swap → USDC', icon: '→', muted: true, link: 'https://aerodrome.finance/swap' },
-                  { label: 'Withdraw to CEX via Base', icon: '→', muted: true },
-                  { label: 'CEX (e.g. Coinbase)', icon: '🏛️' },
-                  { label: 'Convert USDC → USD', icon: '→', muted: true },
-                  { label: 'ACH Transfer', icon: '→', muted: true },
-                  { label: 'Bank (USD)', icon: '🏦' },
-                ].map((step, i) =>
-                  step.muted ? (
-                    <span key={i} style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                      {step.link
-                        ? <a href={step.link} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>{step.label}</a>
-                        : step.label}
-                    </span>
-                  ) : (
-                    <span key={i} style={{
-                      background: 'rgba(96, 165, 250, 0.12)',
-                      border: '1px solid rgba(96, 165, 250, 0.3)',
-                      borderRadius: '6px',
-                      padding: '0.2rem 0.6rem',
-                      fontSize: '0.85rem',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {step.icon} {step.label}
-                    </span>
-                  )
-                )}
-              </div>
-            </div>
+          <div className="ramp-flow-label">On-Ramp (Fiat → Crypto)</div>
+          <div className="ramp-flow">
+            {onRampSteps.map((step, i) =>
+              step.arrow ? (
+                <span key={i} className="ramp-arrow">
+                  {step.link
+                    ? <a href={step.link} target="_blank" rel="noopener noreferrer" className="ramp-flow-link">{step.label}</a>
+                    : step.label}
+                </span>
+              ) : (
+                <span key={i} className="ramp-chip">{step.icon} {step.label}</span>
+              )
+            )}
           </div>
 
-          <p style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '1rem', marginBottom: 0, lineHeight: '1.5' }}>
-            Use <strong style={{ color: 'var(--text)' }}>Base network</strong> when withdrawing from the CEX — it has the lowest withdrawal fees
-            among all EVM chains. Once USDC is in your wallet, swap to any token on{' '}
-            <a href="https://aerodrome.finance/swap" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981' }}>
+          <div className="ramp-flow-label ramp-flow-label--off">Off-Ramp (Crypto → Fiat)</div>
+          <div className="ramp-flow">
+            {offRampSteps.map((step, i) =>
+              step.arrow ? (
+                <span key={i} className="ramp-arrow">
+                  {step.link
+                    ? <a href={step.link} target="_blank" rel="noopener noreferrer" className="ramp-flow-link ramp-flow-link--off">{step.label}</a>
+                    : step.label}
+                </span>
+              ) : (
+                <span key={i} className="ramp-chip ramp-chip--off">{step.icon} {step.label}</span>
+              )
+            )}
+          </div>
+
+          <p className="ramp-advisory-note">
+            Use <strong>Base network</strong> when withdrawing from the CEX — it has the lowest withdrawal
+            fees among all EVM chains. Once USDC is in your wallet, swap to any token on{' '}
+            <a href="https://aerodrome.finance/swap" target="_blank" rel="noopener noreferrer" className="ramp-flow-link">
               Aerodrome Finance
             </a>{' '}
             for the best rates on Base.
@@ -181,47 +143,25 @@ export default function PurchaseCrypto() {
         </div>
 
         {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-          <span style={{ fontSize: '0.8rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-            Quick option via MoonPay — for small amounts or credit / debit card
-          </span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+        <div className="ramp-divider">
+          <div className="ramp-divider-line" />
+          <span className="ramp-divider-label">Quick option via MoonPay — for small amounts or credit / debit card</span>
+          <div className="ramp-divider-line" />
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <div className="ramp-tabs">
           <button
             type="button"
             onClick={() => setSelectedTab('buy')}
-            style={{
-              flex: 1,
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              background: selectedTab === 'buy' ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)',
-              color: selectedTab === 'buy' ? '#0f172a' : 'var(--muted)',
-            }}
+            className={`ramp-tab ${selectedTab === 'buy' ? 'ramp-tab--active' : ''}`}
           >
             Buy Crypto
           </button>
           <button
             type="button"
             onClick={() => setSelectedTab('sell')}
-            style={{
-              flex: 1,
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              background: selectedTab === 'sell' ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)',
-              color: selectedTab === 'sell' ? '#0f172a' : 'var(--muted)',
-            }}
+            className={`ramp-tab ${selectedTab === 'sell' ? 'ramp-tab--active' : ''}`}
           >
             Sell Crypto
           </button>
@@ -229,34 +169,21 @@ export default function PurchaseCrypto() {
 
         {/* Transaction Form */}
         <div className="form-container">
-          {/* Amount Input */}
           <div className="form-group">
             <label>{selectedTab === 'buy' ? 'You Pay' : 'You Sell'}</label>
-            <div style={{ position: 'relative' }}>
+            <div className="ramp-input-wrap">
               <input
                 type="number"
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                style={{ paddingRight: '6rem' }}
+                className="ramp-amount-input"
               />
               {selectedTab === 'buy' ? (
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  style={{
-                    position: 'absolute',
-                    right: '0.5rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 'auto',
-                    padding: '0.5rem',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid #374151',
-                    borderRadius: '6px',
-                    color: 'var(--text)',
-                    fontSize: '0.9rem',
-                  }}
+                  className="ramp-inline-select"
                 >
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
@@ -266,19 +193,7 @@ export default function PurchaseCrypto() {
                 <select
                   value={cryptoCurrency}
                   onChange={(e) => setCryptoCurrency(e.target.value)}
-                  style={{
-                    position: 'absolute',
-                    right: '0.5rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 'auto',
-                    padding: '0.5rem',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid #374151',
-                    borderRadius: '6px',
-                    color: 'var(--text)',
-                    fontSize: '0.9rem',
-                  }}
+                  className="ramp-inline-select"
                 >
                   <option value="usdc">USDC</option>
                   <option value="usdt">USDT</option>
@@ -300,14 +215,10 @@ export default function PurchaseCrypto() {
             </div>
           </div>
 
-          {/* Second Selection - Crypto for Buy, Fiat for Sell */}
           <div className="form-group">
             <label>You Receive</label>
             {selectedTab === 'buy' ? (
-              <select
-                value={cryptoCurrency}
-                onChange={(e) => setCryptoCurrency(e.target.value)}
-              >
+              <select value={cryptoCurrency} onChange={(e) => setCryptoCurrency(e.target.value)}>
                 <optgroup label="Stablecoins (Recommended for Presale)">
                   <option value="usdc">USD Coin (USDC)</option>
                   <option value="usdt">Tether (USDT)</option>
@@ -329,10 +240,7 @@ export default function PurchaseCrypto() {
                 </optgroup>
               </select>
             ) : (
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 <option value="USD">US Dollar (USD)</option>
                 <option value="EUR">Euro (EUR)</option>
                 <option value="GBP">British Pound (GBP)</option>
@@ -342,96 +250,56 @@ export default function PurchaseCrypto() {
 
           {/* Presale Tip */}
           {(cryptoCurrency === 'usdc' || cryptoCurrency === 'usdt') && selectedTab === 'buy' && (
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '8px',
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              fontSize: '0.9rem',
-              color: '#10b981',
-            }}>
+            <div className="ramp-presale-tip">
               You can use {cryptoCurrency.toUpperCase()} to participate in the HLRR presale
             </div>
           )}
 
           {/* MoonPay Info Box */}
-          <div style={{
-            background: 'rgba(34, 211, 238, 0.08)',
-            border: '1px solid rgba(34, 211, 238, 0.3)',
-            borderRadius: '8px',
-            padding: '1rem',
-            marginBottom: '1.5rem',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #60a5fa, #a78bfa)',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                fontSize: '1.5rem',
-              }}>
-                🌙
+          <div className="ramp-moonpay-box">
+            <div className="ramp-moonpay-icon">🌙</div>
+            <div>
+              <div className="ramp-moonpay-title">Powered by MoonPay</div>
+              <div className="ramp-moonpay-desc">
+                {selectedTab === 'buy'
+                  ? 'Buy crypto instantly with credit card, bank transfer, or Apple Pay'
+                  : 'Sell crypto and receive funds directly to your bank account'}
               </div>
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Powered by MoonPay</div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>
-                  {selectedTab === 'buy'
-                    ? 'Buy crypto instantly with credit card, bank transfer, or Apple Pay'
-                    : 'Sell crypto and receive funds directly to your bank account'}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                  ✓ Secure & Compliant • ✓ 150+ Countries • ✓ 24/7 Support
-                </div>
+              <div className="ramp-moonpay-badges">
+                ✓ Secure &amp; Compliant &nbsp;·&nbsp; ✓ 150+ Countries &nbsp;·&nbsp; ✓ 24/7 Support
               </div>
             </div>
           </div>
 
           {/* Disclaimer */}
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.06)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '8px',
-            padding: '1rem 1.25rem',
-            marginBottom: '1.25rem',
-            fontSize: '0.82rem',
-            color: 'var(--text)',
-            lineHeight: '1.6',
-          }}>
-            <div style={{ fontWeight: 600, color: '#f87171', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
-              Disclaimer — Please Read Before Proceeding
-            </div>
-            <p style={{ marginBottom: '0.6rem' }}>
-              NYK Labs provides a <strong style={{ color: 'var(--text)' }}>pure passthrough</strong> to
-              MoonPay's payment widget. We do not collect, store, or have access to any data relating to
-              your transactions, identity, payment details, or personal information. All transaction data
-              is handled solely by MoonPay under their own privacy policy and terms of service.
+          <div className="ramp-disclaimer">
+            <div className="ramp-disclaimer-title">Disclaimer — Please Read Before Proceeding</div>
+            <p>
+              NYK Labs provides a <strong>pure passthrough</strong> to MoonPay's payment widget.
+              We do not collect, store, or have access to any data relating to your transactions,
+              identity, payment details, or personal information. All transaction data is handled
+              solely by MoonPay under their own privacy policy and terms of service.
             </p>
-            <p style={{ marginBottom: '0.6rem' }}>
+            <p>
               Any issues, disputes, failed transactions, refunds, or compliance matters are strictly
               between you and MoonPay. NYK Labs has no ability to intervene, reverse, or assist with
               any MoonPay transaction.
             </p>
-            <p style={{ marginBottom: '1rem' }}>
-              <strong style={{ color: 'var(--text)' }}>By using this feature, you agree that NYK Labs
-              bears no liability whatsoever</strong> for any loss, damage, or inconvenience arising from
-              your use of MoonPay's services, including but not limited to transaction failures, incorrect
-              amounts, network issues, regulatory holds, or account restrictions imposed by MoonPay.
+            <p>
+              <strong>By using this feature, you agree that NYK Labs bears no liability
+              whatsoever</strong> for any loss, damage, or inconvenience arising from your use of
+              MoonPay's services, including but not limited to transaction failures, incorrect amounts,
+              network issues, regulatory holds, or account restrictions imposed by MoonPay.
             </p>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+            <label className="ramp-disclaimer-check">
               <input
                 type="checkbox"
                 checked={disclaimerAgreed}
                 onChange={(e) => setDisclaimerAgreed(e.target.checked)}
-                style={{ marginTop: '0.15rem', width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--accent)' }}
               />
               <span>
-                I have read and agree to the disclaimer above. I understand that NYK Labs is not responsible
-                for any issues arising from my use of MoonPay's services.
+                I have read and agree to the disclaimer above. I understand that NYK Labs is not
+                responsible for any issues arising from my use of MoonPay's services.
               </span>
             </label>
           </div>
@@ -441,49 +309,25 @@ export default function PurchaseCrypto() {
             type="submit"
             onClick={handleTransaction}
             disabled={isDisabled}
-            style={{
-              opacity: isDisabled ? 0.5 : 1,
-              cursor: isDisabled ? 'not-allowed' : 'pointer',
-            }}
+            className={`ramp-submit${isDisabled ? ' ramp-submit--disabled' : ''}`}
           >
             {selectedTab === 'buy' ? 'Buy with MoonPay' : 'Sell with MoonPay'}
           </button>
 
-          {/* Helper Text */}
           {(!amount || parseFloat(amount) <= 0) && (
-            <p style={{
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              color: 'var(--text)',
-              marginTop: '0.75rem',
-            }}>
-              Enter an amount above to continue
-            </p>
+            <p className="ramp-helper-text">Enter an amount above to continue</p>
           )}
           {amount && parseFloat(amount) > 0 && !disclaimerAgreed && (
-            <p style={{
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              color: '#f87171',
-              marginTop: '0.75rem',
-            }}>
+            <p className="ramp-helper-text ramp-helper-text--warn">
               Please read and accept the disclaimer above to continue
             </p>
           )}
         </div>
 
-        {/* Info Box */}
-        <div style={{
-          marginTop: '1.5rem',
-          background: 'rgba(34, 211, 238, 0.05)',
-          borderLeft: '4px solid var(--accent)',
-          padding: '1rem',
-          borderRadius: '0 8px 8px 0',
-        }}>
-          <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '1rem' }}>
-            About MoonPay
-          </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: 0 }}>
+        {/* About MoonPay */}
+        <div className="intro" style={{ marginTop: '1.5rem' }}>
+          <p>
+            <strong>About MoonPay — </strong>
             Click the button above to open the MoonPay widget. Accepts credit/debit card,
             Apple Pay, Google Pay, and bank transfer in 150+ countries. Convenient for
             small amounts or when you need crypto quickly — no CEX account required.
@@ -493,21 +337,9 @@ export default function PurchaseCrypto() {
 
       {/* MoonPay Modal */}
       {showModal && iframeUrl && (
-        <div
-          className="moonpay-modal-overlay"
-          onClick={closeModal}
-        >
-          <div
-            className="moonpay-modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="moonpay-modal-close"
-              onClick={closeModal}
-              aria-label="Close"
-            >
-              ✕
-            </button>
+        <div className="moonpay-modal-overlay" onClick={closeModal}>
+          <div className="moonpay-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="moonpay-modal-close" onClick={closeModal} aria-label="Close">✕</button>
             <iframe
               src={iframeUrl}
               title="MoonPay Widget"
@@ -519,29 +351,287 @@ export default function PurchaseCrypto() {
       )}
 
       <style>{`
-        .form-group input[type="number"]::-webkit-outer-spin-button,
-        .form-group input[type="number"]::-webkit-inner-spin-button {
+        /* ── Advisory block ───────────────────────────────────────────── */
+        .ramp-advisory {
+          background: rgba(34,211,238,0.08);
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 10px;
+          padding: 1.5rem;
+          margin-bottom: 2rem;
+        }
+        .ramp-advisory h3 {
+          color: var(--accent);
+          font-size: 1.05rem;
+          margin: 0 0 0.75rem;
+          padding: 0;
+          border: none;
+        }
+        .ramp-advisory-desc {
+          font-size: 0.92rem;
+          line-height: 1.65;
+          margin-bottom: 1.25rem;
+        }
+        .ramp-advisory-note {
+          font-size: 0.85rem;
+          line-height: 1.55;
+          margin-top: 1rem;
+          margin-bottom: 0;
+          color: var(--muted);
+        }
+        .ramp-advisory-note strong { color: var(--text); }
+
+        /* ── Flow rows ────────────────────────────────────────────────── */
+        .ramp-flow-label {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 0.5rem;
+        }
+        .ramp-flow-label--off {
+          margin-top: 1rem;
+        }
+        .ramp-flow {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.88rem;
+        }
+        .ramp-chip {
+          background: rgba(34,211,238,0.12);
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 6px;
+          padding: 0.2rem 0.65rem;
+          white-space: nowrap;
+          color: var(--text);
+        }
+        .ramp-chip--off {
+          background: rgba(34,211,238,0.07);
+          border-color: rgba(34,211,238,0.2);
+        }
+        .ramp-arrow {
+          color: var(--muted);
+          font-size: 0.85rem;
+        }
+        .ramp-flow-link {
+          color: var(--accent);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .ramp-flow-link--off { color: var(--accent); }
+
+        /* ── Divider ──────────────────────────────────────────────────── */
+        .ramp-divider {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .ramp-divider-line {
+          flex: 1;
+          height: 1px;
+          background: rgba(255,255,255,0.08);
+        }
+        .ramp-divider-label {
+          font-size: 0.8rem;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+
+        /* ── Tabs ─────────────────────────────────────────────────────── */
+        .ramp-tabs {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 1.5rem;
+        }
+        .ramp-tab {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          border: 1px solid rgba(34,211,238,0.25);
+          cursor: pointer;
+          transition: all 0.2s;
+          background: rgba(255,255,255,0.04);
+          color: var(--muted);
+        }
+        .ramp-tab--active {
+          background: var(--accent);
+          color: #0f172a;
+          border-color: var(--accent);
+        }
+        .ramp-tab:not(.ramp-tab--active):hover {
+          border-color: rgba(34,211,238,0.5);
+          color: var(--text);
+        }
+
+        /* ── Amount input ─────────────────────────────────────────────── */
+        .ramp-input-wrap {
+          position: relative;
+        }
+        .ramp-amount-input {
+          padding-right: 6rem;
+          -moz-appearance: textfield;
+        }
+        .ramp-amount-input::-webkit-outer-spin-button,
+        .ramp-amount-input::-webkit-inner-spin-button {
           -webkit-appearance: none;
           margin: 0;
         }
-        .form-group input[type="number"] {
-          -moz-appearance: textfield;
+        .ramp-inline-select {
+          position: absolute;
+          right: 0.5rem;
+          top: 50%;
+          transform: translateY(-50%);
+          width: auto;
+          padding: 0.5rem;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 6px;
+          color: var(--text);
+          font-size: 0.9rem;
         }
 
+        /* ── Presale tip ──────────────────────────────────────────────── */
+        .ramp-presale-tip {
+          background: rgba(34,211,238,0.08);
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+          color: var(--accent);
+        }
+
+        /* ── MoonPay info box ─────────────────────────────────────────── */
+        .ramp-moonpay-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+          background: rgba(17,24,39,0.6);
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 8px;
+          padding: 1rem 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+        .ramp-moonpay-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, #60a5fa, #a78bfa);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          font-size: 1.5rem;
+        }
+        .ramp-moonpay-title {
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 0.25rem;
+        }
+        .ramp-moonpay-desc {
+          font-size: 0.9rem;
+          color: var(--muted);
+          margin-bottom: 0.4rem;
+          line-height: 1.5;
+        }
+        .ramp-moonpay-badges {
+          font-size: 0.8rem;
+          color: var(--muted);
+        }
+
+        /* ── Disclaimer ───────────────────────────────────────────────── */
+        .ramp-disclaimer {
+          background: rgba(239,68,68,0.06);
+          border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 8px;
+          padding: 1rem 1.25rem;
+          margin-bottom: 1.25rem;
+          font-size: 0.85rem;
+          line-height: 1.65;
+        }
+        .ramp-disclaimer p { margin-bottom: 0.6rem; }
+        .ramp-disclaimer p:last-of-type { margin-bottom: 0.9rem; }
+        .ramp-disclaimer strong { color: var(--text); }
+        .ramp-disclaimer-title {
+          font-weight: 600;
+          color: #f87171;
+          margin-bottom: 0.6rem;
+          font-size: 0.88rem;
+        }
+        .ramp-disclaimer-check {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.6rem;
+          cursor: pointer;
+          font-size: 0.85rem;
+        }
+        .ramp-disclaimer-check input[type="checkbox"] {
+          margin-top: 0.15rem;
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          cursor: pointer;
+          accent-color: var(--accent);
+        }
+
+        /* ── Submit button ────────────────────────────────────────────── */
+        .ramp-submit {
+          display: block;
+          width: 100%;
+          background: var(--accent);
+          color: #0f172a;
+          border: none;
+          border-radius: 8px;
+          padding: 0.85rem 1rem;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .ramp-submit:hover:not(.ramp-submit--disabled) {
+          background: #06b6d4;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 14px rgba(34,211,238,0.3);
+        }
+        .ramp-submit--disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        /* ── Helper text ──────────────────────────────────────────────── */
+        .ramp-helper-text {
+          text-align: center;
+          font-size: 0.9rem;
+          color: var(--muted);
+          margin-top: 0.75rem;
+        }
+        .ramp-helper-text--warn { color: #f87171; }
+
+        /* ── Intro reuse ──────────────────────────────────────────────── */
+        .intro {
+          background: rgba(34,211,238,0.1);
+          border-left: 4px solid var(--accent);
+          padding: 1.25rem 1.5rem;
+          border-radius: 0 8px 8px 0;
+        }
+        .intro p { margin: 0; font-size: 0.95rem; line-height: 1.7; }
+
+        /* ── MoonPay modal ────────────────────────────────────────────── */
         .moonpay-modal-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
+          inset: 0;
+          background: rgba(0,0,0,0.8);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 9999;
           padding: 1rem;
         }
-
         .moonpay-modal-content {
           position: relative;
           width: 100%;
@@ -551,9 +641,8 @@ export default function PurchaseCrypto() {
           background: #fff;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
-
         .moonpay-modal-close {
           position: absolute;
           top: 0.75rem;
@@ -561,7 +650,7 @@ export default function PurchaseCrypto() {
           width: 32px;
           height: 32px;
           border: none;
-          background: rgba(0, 0, 0, 0.1);
+          background: rgba(0,0,0,0.1);
           color: #333;
           border-radius: 50%;
           font-size: 1rem;
@@ -572,15 +661,12 @@ export default function PurchaseCrypto() {
           z-index: 10;
           transition: background 0.2s;
         }
+        .moonpay-modal-close:hover { background: rgba(0,0,0,0.2); }
+        .moonpay-iframe { width: 100%; height: 100%; border: none; }
 
-        .moonpay-modal-close:hover {
-          background: rgba(0, 0, 0, 0.2);
-        }
-
-        .moonpay-iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
+        @media (max-width: 560px) {
+          .ramp-divider-label { white-space: normal; text-align: center; }
+          .ramp-tabs { flex-direction: column; }
         }
       `}</style>
     </main>
