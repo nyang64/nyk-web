@@ -62,8 +62,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 NYK Labs
               </NavLink>
             </li>
-            <li>
+            {/* <li>
               <NavLink to="/product">DeID Replicator</NavLink>
+            </li> */}
+            <li>
+              <NavLink to="/ngx">nGX</NavLink>
             </li>
             <li
               className="dropdown"
