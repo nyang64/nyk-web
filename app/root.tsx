@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import ChatWidget from "./components/ChatWidget";
 
 function VisitorCounter() {
   return (
@@ -105,6 +106,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </ul>
         </nav>
         {children}
+        <ChatWidget />
         <footer>
           <p>
             © {new Date().getFullYear()} NYK Labs. All rights reserved.
