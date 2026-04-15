@@ -3,8 +3,8 @@ import type { Route } from "./+types/faq";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "FAQ - NYK Labs Airdrop" },
-    { name: "description", content: "Frequently asked questions about NYK Labs, HLRR token, and the airdrop." },
+    { title: "FAQ | NYK Labs" },
+    { name: "description", content: "Frequently asked questions about NYK Labs, nGX self-hosted email infrastructure, HLRR token, and the airdrop." },
   ];
 }
 
@@ -32,186 +32,95 @@ export default function FAQ() {
 
   const faqs = [
     {
-      category: "General Information",
+      category: "nGX — nyklabs Agent Exchange",
       questions: [
         {
-          q: "What is the Hashed Lierre Token (HLRR)?",
-          a: `Hashed Lierre Token (HLRR) is a cryptocurrency token being distributed through an airdrop campaign. Register to claim your free tokens before the opportunity expires.`
+          q: "What is nGX?",
+          a: `**nGX (nyklabs Agent Exchange)** is self-hosted email infrastructure purpose-built for AI agents. It lets you provision real email inboxes for your agents — addresses like agent@mail.yourdomain.com — with a clean REST API, real-time webhook and WebSocket events, thread management, and a full SMTP pipeline with DKIM signing.
+
+Unlike hosted email-for-agents services, nGX runs entirely inside your own infrastructure. Your data stays in your PostgreSQL and S3; your domain, your keys, your rules.`
         },
         {
-          q: "What is an airdrop?",
-          a: `An airdrop is a distribution of cryptocurrency tokens to multiple wallet addresses, usually for free. It's a way for projects to distribute tokens to early supporters and build community engagement.`
+          q: "How is nGX different from hosted email-for-agents services?",
+          a: `Hosted services put your agents on a vendor's domain (e.g. agent@somevendor.to) and route all email through their infrastructure. That creates three problems for enterprises:
+
+**Data control** — email bodies and conversation history live on a third-party server you don't own.
+
+**Regulatory risk** — HIPAA, GDPR, SOC 2, and data-residency requirements are difficult or impossible to satisfy when sensitive communications pass through an external SaaS.
+
+**Vendor dependency** — pricing, uptime, and feature decisions are outside your control.
+
+nGX eliminates all three. You deploy it on your own servers, configure your own domain via the MAIL_DOMAIN environment variable, and own everything end-to-end.`
         },
         {
-          q: "Is this airdrop really free?",
-          a: `Yes, registration and token claiming are completely free. You only need to provide your email and wallet address. However, you may need to pay gas fees when claiming tokens on the blockchain, depending on the network conditions.`
+          q: "What infrastructure do I need to run nGX?",
+          a: `For local evaluation, all dependencies run in Docker:
+
+• **PostgreSQL** — primary data store (with Row-Level Security for tenant isolation)
+• **Kafka** — event streaming backbone (inbound/outbound email queues, event fan-out)
+• **Redis** — caching and WebSocket pub/sub
+• **S3 / MinIO** — object storage for email bodies and attachments
+
+The application services are standard Go binaries. A single make setup command starts the full infrastructure stack via Docker Compose and runs all database migrations.
+
+For production, you additionally need DNS control over your mail domain (MX, SPF, DKIM, DMARC records).`
+        },
+        {
+          q: "Is nGX free to use?",
+          a: `nGX is **free for non-commercial use and evaluation** (up to 90 days for business evaluation). Production and business deployments require a commercial license from nyklabs.com.
+
+The right to offer nGX as a hosted or managed cloud service is exclusively reserved for nyklabs.com — no third party may run nGX as a SaaS on behalf of others.
+
+For licensing inquiries: [licensing@nyklabs.com](mailto:licensing@nyklabs.com)`
+        },
+        {
+          q: "Can I deploy nGX on AWS, GCP, or Azure?",
+          a: `Yes. nGX is cloud-agnostic — it runs on any infrastructure that supports Docker containers and the required backing services (Postgres, Kafka, Redis, S3-compatible storage).
+
+For AWS deployments you can use RDS for Postgres, MSK for Kafka, ElastiCache for Redis, and S3 directly. GCP and Azure equivalents work the same way. nyklabs plans to offer cloud-native messaging adapters (SQS on AWS, Pub/Sub on GCP) as optional replacements for the self-managed Kafka dependency in a future release.`
         }
       ]
     },
     {
-      category: "HLRR Token Airdrop Allocation",
+      category: "HLRR Token & Airdrop",
       questions: [
         {
-          q: "How is my airdrop allocation calculated?",
-          a: `The base allocation is **100 HLRR tokens** per valid registration. Both your email address and wallet address must be unique — using the same email with different wallets, or the same wallet with different emails, will be rejected. Each fully unique email + wallet pair earns one unit of 100 HLRR.`
+          q: "What is HLRR and how do I participate in the airdrop?",
+          a: `**Hashed Lierre (HLRR)** is a utility and access token on the Base network that powers the NYK Labs platform — unlocking features, developer tools, ecosystem programs, governance, and staking rewards. Maximum supply is fixed at 120M tokens.
+
+The airdrop distributes HLRR to early supporters for free. Registration requires only your email and a Base-compatible wallet address (MetaMask, Coinbase Wallet, Trust Wallet). Email verification is required; without it you are not eligible. You may need a small amount of ETH on Base to cover gas fees when claiming on-chain.`
         },
         {
-          q: "Can I earn more than 100 HLRR?",
-          a: `Yes, there are two ways:
+          q: "How is my allocation calculated, and can I earn more?",
+          a: `The base allocation is **100 HLRR** per valid registration. Both email and wallet must be unique — the same email or wallet cannot be reused.
 
-**Multiple unique registrations** — each completely unique email + wallet pair earns 100 HLRR.
+To earn more:
 
-**Referrals (recommended)** — after registration you receive a unique 8-character referral code. Share it with friends: when they register using your code, both of you earn **+50 HLRR**. There is no cap on referrals.`
+**Referrals** — after registration you receive a unique 8-character referral code. When someone registers using your code, both of you earn **+50 HLRR**. There is no cap on referrals.
+
+**If you were not referred by anyone, leave the referral field blank.** Entering an invalid code causes registration to fail — all codes are validated in real time.`
         },
         {
-          q: "How do referrals work, and what happens if I enter an invalid code?",
-          a: `After successful registration your referral code is displayed and emailed to you. When someone uses it during their registration, both parties automatically receive +50 HLRR.
+          q: "How does wallet verification work, and is it safe?",
+          a: `You sign a random nonce using your wallet's private key — the standard industry method for proving wallet ownership. Your private key never leaves your wallet, no transaction is authorized, and no funds can be moved through this process.
 
-**If you were not referred by anyone, leave the referral field blank.** Entering an invalid or non-existent code causes registration to fail — the backend validates all codes in real-time and rejects bad ones to prevent fraudulent referrals.`
-        }
-      ]
-    },
-    {
-      category: "Technical & Registration",
-      questions: [
-        {
-          q: "Why do I need to verify my wallet ownership?",
-          a: `We require wallet verification to ensure that only legitimate wallet owners can register for airdrops. This prevents someone from registering your wallet address without your permission.
-
-The verification works by having you sign a random number (called a nonce) using your wallet's private key. This is the standard, industry-approved method for proving wallet ownership and is completely safe:
-
-• Your private key never leaves your wallet
-• You're only signing a message, not authorizing any transaction
-• No funds can be moved or accessed through this process
-
-If you're still uncomfortable with the verification process, you have two options:
-
-1. Choose not to participate in the airdrop
-2. Create a new, empty wallet specifically for receiving airdrops and use that for registration
-
-This way, even if you have concerns, you can still participate without risking your main wallet.`
+If you are uncomfortable, you can create a dedicated empty wallet for the airdrop without risking your main wallet. **NYK Labs will never ask for your private key, seed phrase, or password.** Anyone requesting those is a scammer.`
         },
         {
-          q: "Which wallet and network do I need?",
-          a: `HLRR is available exclusively on the **Base network**. Use any Web3 wallet that supports Base — MetaMask, Coinbase Wallet, and Trust Wallet are popular options. You'll need a small amount of ETH on Base to cover gas fees when claiming tokens.`
+          q: "When will tokens be distributed, and how do I claim them?",
+          a: `The distribution date will be announced on X (@NykLabs) and Discord once registration closes. Verified participants will receive an email with the schedule, claiming instructions, and staking details.
+
+To claim, connect the same wallet you registered with. The tokens themselves are free; you will need a small amount of ETH on Base for on-chain gas fees.
+
+If you encounter errors during registration: check that your wallet address is 42 characters starting with 0x, your email is unique and under 48 characters, and your referral code (if used) is exactly 8 characters. Wallet addresses cannot be changed after email verification.`
         },
         {
-          q: "Do I need to verify my email?",
-          a: `Yes, email verification is required. After registration, click the verification link sent to your inbox. Check your spam folder if it doesn't arrive — Gmail is preferred, as some providers (especially Yahoo) may have delivery issues. If not received after 10 minutes, try registering with a different email address.
+          q: "How does HLRR staking work?",
+          a: `Visit the [Hashed Lierre page](/hashed-lierre) and connect your wallet on Base Mainnet. Minimum stake is 100 HLRR; a 14-day lock applies from your first ever stake (additional stakes do not reset the timer).
 
-Without email verification you will not be eligible for the airdrop.`
-        },
-        {
-          q: "Can I register multiple times?",
-          a: `No, each email address and wallet address can only be registered once. Multiple registrations with the same information will be rejected.`
-        },
-        {
-          q: "What happens after I register?",
-          a: `After successful registration and email verification:
+**Staking APR schedule:** 12% (Years 1–2) → 10% (Year 3) → 8% (Year 4) → 6% (Year 5) → 4% (Year 6+). Rewards auto-compound into your staked balance and continue until the 40M reserve is depleted.
 
-1. Your email and wallet are recorded in our system
-2. Your referral code is generated and displayed
-3. You're eligible for the airdrop distribution
-4. Share your referral code to earn bonus tokens
-5. Follow up on X and Discord
-6. Wait for the official airdrop distribution announcement in X and Discord channel`
-        }
-      ]
-    },
-    {
-      category: "Token Distribution & Claims",
-      questions: [
-        {
-          q: "When and how will tokens be distributed?",
-          a: `The distribution date will be announced on our X (Twitter) and Discord channels once registration closes. Verified participants will also receive an email with the distribution schedule, step-by-step claiming instructions, and staking information.
-
-To claim, you will connect the same wallet you registered with. Follow our official channels for the announcement.`
-        },
-        {
-          q: "Is there any cost to claim my tokens?",
-          a: `The tokens themselves are free. You will need a small amount of ETH on Base to cover on-chain gas fees when claiming.`
-        }
-      ]
-    },
-    {
-      category: "Staking & Token Value",
-      questions: [
-        {
-          q: "Can I stake my airdrop tokens?",
-          a: `Yes! Once you receive your HLRR tokens, you can stake them to earn rewards:
-
-• Initial APR: 12% (Years 1-2)
-• APR reduces by 2% annually until reaching 4%
-• Final APR: 4% (Year 6 onwards)
-• Rewards continue until 40M staking reserve is depleted
-
-Visit the Hashed Lierre page for complete staking details.`
-        },
-        {
-          q: "How do I stake my HLRR tokens?",
-          a: `Visit the [Hashed Lierre page](/hashed-lierre) and connect your wallet (must be on Base Mainnet and hold HLRR).
-
-Under **HLRR Staking**, enter the amount you want to stake and click **Stake HLRR**. Confirm the transaction in your wallet.
-
-**Notes:**
-• Minimum stake: 100 HLRR
-• Any accrued rewards are automatically compounded into your staked balance before the new stake is added
-• A 14-day lock period begins from your **first ever** stake — additional stakes do not reset this timer
-• You need a small amount of ETH on Base Mainnet to cover gas fees`
-        },
-        {
-          q: "How do I unstake my HLRR tokens?",
-          a: `Visit the [Hashed Lierre page](/hashed-lierre) and connect your wallet (must be on Base Mainnet).
-
-Under **Unstake**, you have two options:
-
-**Partial unstake** — enter the amount you want to withdraw (up to your current staked balance) and click **Unstake Amount**. Accrued rewards continue on the remaining stake.
-
-**Unstake All** — click **Unstake All & Claim Rewards** to receive everything: your full staked balance plus all accrued rewards. If you have pending rewards, this requires 2 wallet confirmations (one to compound rewards, one to unstake).
-
-**Note:** You can only unstake after **14 days** have elapsed since your first stake.`
-        },
-        {
-          q: "How do I claim staking rewards?",
-          a: `Staking rewards on HLRR **auto-compound** — they are added to your staked balance, not sent to your wallet separately.
-
-The easiest way to collect rewards is to use **Unstake All** on the [Hashed Lierre page](/hashed-lierre), which compounds all accrued rewards and returns your full balance in one flow.
-
-If you want to compound rewards without unstaking, the rewards are automatically included the next time you stake additional tokens, or you can trigger compounding manually via the contract's claimReward() function on Blockscout.
-
-Reward formula: **12% APR** in Years 1–2, reducing by 2% per year until reaching 4% (Year 6 onwards).`
-        },
-        {
-          q: "What gives HLRR tokens value?",
-          a: `The NYK token is a utility and access token that powers the Nyk Labs platform. It is used to unlock features, access developer tools and services, participate in ecosystem programs, and coordinate activity across applications built by Nyk Labs. Over time, the token will support community governance, reputation, and incentive mechanisms designed to align builders, users, and contributors.
-
-The NYK token is not intended to be a security or financial instrument. It does not represent ownership, equity, or any claim on the assets, profits, or operations of Nyk Labs or any affiliated entity. Its value is derived solely from its utility within the ecosystem.
-
-Key utility features:
-
-• **Platform Access**: Unlock features and services within the Nyk Labs ecosystem
-• **Developer Tools**: Access to specialized tools and APIs for building applications
-• **Ecosystem Programs**: Participate in community initiatives and programs
-• **Governance**: Vote on protocol upgrades and community proposals
-• **Staking Rewards**: Earn passive income by staking tokens
-• **Scarcity**: Fixed maximum supply of 120M tokens`
-        }
-      ]
-    },
-    {
-      category: "Troubleshooting",
-      questions: [
-        {
-          q: "I'm getting an error during registration. What should I do?",
-          a: `Common issues include: invalid wallet address format (must be 42 characters starting with 0x), email already registered, or referral code incorrect length (must be exactly 8 characters or empty). Make sure you've completed the CAPTCHA verification and wallet ownership verification before submitting.`
-        },
-        {
-          q: "I made a mistake in my wallet address. Can I change it?",
-          a: `Once registered and email verified, wallet addresses cannot be changed. Please double-check your wallet address before submitting the registration form.`
-        },
-        {
-          q: "The website says my email is invalid, but it's correct?",
-          a: `Ensure your email follows standard format (example@domain.com) and is less than 48 characters. Also, avoid using temporary or disposable email services.`
+To unstake, use **Partial Unstake** to withdraw a specific amount (rewards continue on the remainder), or **Unstake All & Claim Rewards** to receive your full balance plus all accrued rewards in one flow (requires 2 wallet confirmations if rewards are pending).`
         }
       ]
     },
@@ -219,16 +128,12 @@ Key utility features:
       category: "Security & Privacy",
       questions: [
         {
-          q: "Is my information safe?",
-          a: `We only collect your email address and wallet address for airdrop distribution purposes. Your wallet verification signature is only used to prove ownership and cannot be used to access your funds or authorize transactions. We never ask for your private keys or seed phrases.`
-        },
-        {
-          q: "Will you ever ask for my private keys or seed phrase?",
-          a: `NEVER. We will never ask for your private keys, seed phrase, or password. Anyone asking for this information is a scammer. Only share your wallet address (which starts with 0x).`
-        },
-        {
-          q: "How do I know this isn't a scam?",
-          a: `Legitimate airdrops never ask for private keys or require you to send funds first. We only ask for your email and wallet address. Always verify you're on the official website and follow official social media channels for updates.`
+          q: "Is my information safe, and how do I know this isn't a scam?",
+          a: `For the **airdrop**, we collect only your email and wallet address. Your wallet signature proves ownership and cannot authorize transactions or access funds. We never ask for private keys or seed phrases.
+
+Legitimate airdrops never require you to send funds first or share your seed phrase. Always verify you are on the official NYK Labs website and follow announcements only through our official X (@NykLabs) and Discord channels.
+
+For **nGX**, all data — email bodies, attachments, conversation history — stays in your own PostgreSQL and S3. NYK Labs never has access to the content of emails processed by a self-hosted nGX deployment.`
         }
       ]
     }
@@ -239,7 +144,7 @@ Key utility features:
       <section className="card">
         <h2>Frequently Asked Questions</h2>
         <p className="faq-intro">
-          Find answers to common questions about NYK Labs, the HLRR token, and the airdrop registration process.
+          Find answers to common questions about NYK Labs, nGX self-hosted email infrastructure, the HLRR token, and the airdrop.
         </p>
 
         <div className="faq-container">
