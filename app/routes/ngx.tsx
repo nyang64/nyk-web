@@ -15,121 +15,95 @@ export default function NGX() {
   return (
     <main>
       <section className="card">
-        <div className="ngx-hero">
-          <h2>
-            nGX{" "}
-            <span className="ngx-subtitle">nyklabs Agent Exchange</span>
-          </h2>
-          <p className="ngx-tagline">
-            Self-hosted email infrastructure for AI agents —{" "}
-            <strong>on your domain, your servers, your terms.</strong>
-          </p>
-        </div>
+        <h2 className="ngx-title">nGX <span className="ngx-full-name">nyklabs Agent Exchange</span></h2>
 
-        <div className="ngx-description">
+        <div className="intro">
           <p>
-            AI agents need real email addresses. Hosted email-for-agents
-            services put your agents on a vendor's domain and route all
-            communications through their infrastructure. nGX is the
-            alternative: a complete, open-core email platform you deploy
-            inside your own environment.
-          </p>
-          <p>
-            Your agents get addresses like{" "}
-            <code>agent@mail.yourdomain.com</code>. Email bodies, attachments,
-            and conversation history stay in your own PostgreSQL and S3. DKIM
-            keys are yours. Compliance obligations — HIPAA, GDPR, SOC 2, data
-            residency — are met without negotiating a vendor BAA or DPA.
+            AI agents need real email addresses. Hosted email-for-agents services put your agents on a vendor's domain
+            and route all communications through their infrastructure.{" "}
+            <strong>nGX is the alternative</strong> — a complete email platform you deploy inside your own
+            environment, on your own domain, under your own control.
           </p>
         </div>
 
-        <div className="ngx-highlights">
-          <div className="ngx-highlight-item">
-            <span className="ngx-highlight-icon">🏢</span>
-            <div>
-              <strong>Enterprise self-hosted</strong>
-              <p>Deploy on your infrastructure. No vendor lock-in, no per-seat subscription.</p>
-            </div>
-          </div>
-          <div className="ngx-highlight-item">
-            <span className="ngx-highlight-icon">🔒</span>
-            <div>
-              <strong>Regulatory compliance</strong>
-              <p>Email never leaves your environment. Meet HIPAA, GDPR, SOC 2, and data residency requirements by design.</p>
-            </div>
-          </div>
-          <div className="ngx-highlight-item">
-            <span className="ngx-highlight-icon">🌐</span>
-            <div>
-              <strong>Your domain, your brand</strong>
-              <p>Configure <code>MAIL_DOMAIN=mail.yourdomain.com</code> and every inbox provisions under your domain.</p>
-            </div>
-          </div>
-          <div className="ngx-highlight-item">
-            <span className="ngx-highlight-icon">⚡</span>
-            <div>
-              <strong>Full email pipeline</strong>
-              <p>Inbound SMTP with DKIM/SPF/DMARC, outbound MX delivery, webhooks, real-time WebSocket events, and a clean REST API.</p>
-            </div>
-          </div>
-        </div>
+        <h3>Why Self-Host?</h3>
+        <ul className="utility-list">
+          <li>
+            <strong>Your domain, your brand</strong>
+            Configure <code>MAIL_DOMAIN=mail.yourdomain.com</code> and every agent inbox provisions under your domain —
+            not <em>agent@somevendor.to</em>.
+          </li>
+          <li>
+            <strong>Regulatory compliance</strong>
+            Email content never leaves your environment. Meet HIPAA, GDPR, SOC 2, and data residency requirements
+            by design — no vendor BAA or DPA negotiation required.
+          </li>
+          <li>
+            <strong>Enterprise self-hosted</strong>
+            Deploy on your own infrastructure. No per-seat subscription, no uptime dependency on a third party.
+          </li>
+          <li>
+            <strong>Full pipeline, fully owned</strong>
+            Inbound SMTP with DKIM/SPF/DMARC, outbound MX delivery, webhooks with HMAC signatures, real-time
+            WebSocket events, and a clean REST API — all running on your hardware.
+          </li>
+        </ul>
 
-        <div className="ngx-repo-link">
+        <div className="ngx-repo-row">
           <a
             href="https://github.com/nyang64/nGX"
             target="_blank"
             rel="noopener noreferrer"
-            className="ngx-btn"
+            className="cta-button"
           >
             View on GitHub →
           </a>
           <span className="ngx-license-note">
-            Source-available · Free to evaluate · Commercial license for
-            production use
+            Source-available &nbsp;·&nbsp; Free to evaluate &nbsp;·&nbsp; Commercial license for production use
           </span>
         </div>
 
-        <div className="ngx-section">
-          <h3>Local Test Setup</h3>
-          <p>
-            nGX runs entirely in Docker for local development — no cloud
-            account or DNS configuration needed.
-          </p>
+        <h3>Local Test Setup</h3>
+        <p style={{ marginBottom: "1.5rem", lineHeight: "1.7" }}>
+          nGX runs entirely in Docker for local development — no cloud account or DNS configuration needed.
+          Choose the quick path or the step-by-step path below.
+        </p>
 
-          <div className="ngx-step">
-            <span className="ngx-step-num">1</span>
-            <div>
-              <strong>Prerequisites</strong>
-              <pre className="ngx-code">Go 1.23+, Docker, Docker Compose, Make</pre>
+        <div className="ngx-tabs">
+          {/* ── Option A: Make (one-liner) ── */}
+          <div className="ngx-option">
+            <div className="ngx-option-header">
+              <span className="ngx-option-badge">Option A</span>
+              <span className="ngx-option-title">One-command bootstrap</span>
             </div>
-          </div>
+            <p className="ngx-option-desc">
+              The Makefile orchestrates Docker Compose for all infrastructure and runs database migrations in one shot.
+            </p>
 
-          <div className="ngx-step">
-            <span className="ngx-step-num">2</span>
-            <div>
-              <strong>Clone and configure</strong>
-              <pre className="ngx-code">{`git clone https://github.com/nyang64/nGX
-cd nGX
+            <div className="ngx-step">
+              <span className="ngx-step-num">1</span>
+              <div>
+                <strong>Prerequisites</strong>
+                <pre className="ngx-code">Go 1.23+, Docker, Docker Compose, Make</pre>
+              </div>
+            </div>
+
+            <div className="ngx-step">
+              <span className="ngx-step-num">2</span>
+              <div>
+                <strong>Clone, configure, and bootstrap</strong>
+                <pre className="ngx-code">{`git clone https://github.com/nyang64/nGX && cd nGX
 cp .env.example .env
-# Optional: set MAIL_DOMAIN=mail.yourdomain.com in .env
-# Leave blank to use full addresses (e.g. agent@localhost) during evaluation`}</pre>
+# Edit .env — set MAIL_DOMAIN=mail.yourdomain.com (or leave blank for evaluation)
+make setup        # starts infra via Docker Compose + runs all migrations`}</pre>
+              </div>
             </div>
-          </div>
 
-          <div className="ngx-step">
-            <span className="ngx-step-num">3</span>
-            <div>
-              <strong>Start infrastructure and run migrations</strong>
-              <pre className="ngx-code">{`make up          # starts Postgres, Kafka, Redis, MinIO, MailHog
-make migrate-up  # applies all database migrations`}</pre>
-            </div>
-          </div>
-
-          <div className="ngx-step">
-            <span className="ngx-step-num">4</span>
-            <div>
-              <strong>Start services</strong>
-              <pre className="ngx-code">{`# Core services
+            <div className="ngx-step">
+              <span className="ngx-step-num">3</span>
+              <div>
+                <strong>Start application services</strong>
+                <pre className="ngx-code">{`# Core services
 go run ./services/auth/cmd/auth   &   # :8081
 go run ./services/inbox/cmd/inbox &   # :8082
 go run ./services/api/cmd/api         # :8080
@@ -138,163 +112,236 @@ go run ./services/api/cmd/api         # :8080
 go run ./services/email-pipeline/cmd/email-pipeline     &
 go run ./services/event-dispatcher/cmd/event-dispatcher &
 go run ./services/webhook-service/cmd/webhook-service   &`}</pre>
+              </div>
             </div>
           </div>
 
-          <div className="ngx-step">
-            <span className="ngx-step-num">5</span>
-            <div>
-              <strong>Create an inbox and send a test email</strong>
-              <pre className="ngx-code">{`# Create org + API key (see README for full bootstrap steps)
-# Then provision an inbox:
-curl -X POST http://localhost:8080/v1/inboxes \\
-  -H "Authorization: Bearer $KEY" \\
-  -d '{"address":"agent"}'
-# → agent@mail.yourdomain.com (or agent@localhost if MAIL_DOMAIN not set)
+          {/* ── Option B: Docker Compose ── */}
+          <div className="ngx-option">
+            <div className="ngx-option-header">
+              <span className="ngx-option-badge">Option B</span>
+              <span className="ngx-option-title">Docker Compose step-by-step</span>
+            </div>
+            <p className="ngx-option-desc">
+              Run the infrastructure stack manually for more control over each component.
+            </p>
 
-# Send outbound:
-curl -X POST http://localhost:8080/v1/inboxes/<id>/messages/send \\
-  -H "Authorization: Bearer $KEY" \\
-  -d '{"to":[{"email":"test@example.com"}],"subject":"Hello from nGX","body_text":"It works."}'`}</pre>
+            <div className="ngx-step">
+              <span className="ngx-step-num">1</span>
+              <div>
+                <strong>Clone and configure</strong>
+                <pre className="ngx-code">{`git clone https://github.com/nyang64/nGX && cd nGX
+cp .env.example .env
+# Edit .env — set MAIL_DOMAIN, DKIM_DOMAIN, and other required values`}</pre>
+              </div>
+            </div>
+
+            <div className="ngx-step">
+              <span className="ngx-step-num">2</span>
+              <div>
+                <strong>Start infrastructure with Docker Compose</strong>
+                <pre className="ngx-code">{`docker compose up -d
+# Starts: PostgreSQL, Kafka, Redis, MinIO, MailHog
+# PostgreSQL  → localhost:5432
+# Kafka       → localhost:9092
+# Redis       → localhost:6379
+# MinIO       → localhost:9000  (console: localhost:9001)
+# MailHog     → localhost:8025  (SMTP sink + web UI)`}</pre>
+              </div>
+            </div>
+
+            <div className="ngx-step">
+              <span className="ngx-step-num">3</span>
+              <div>
+                <strong>Run database migrations</strong>
+                <pre className="ngx-code">{`make migrate-up
+# Applies all SQL migrations to the local Postgres instance`}</pre>
+              </div>
+            </div>
+
+            <div className="ngx-step">
+              <span className="ngx-step-num">4</span>
+              <div>
+                <strong>Start application services</strong>
+                <pre className="ngx-code">{`go run ./services/auth/cmd/auth   &   # :8081
+go run ./services/inbox/cmd/inbox &   # :8082
+go run ./services/api/cmd/api         # :8080
+go run ./services/email-pipeline/cmd/email-pipeline     &
+go run ./services/event-dispatcher/cmd/event-dispatcher &
+go run ./services/webhook-service/cmd/webhook-service   &`}</pre>
+              </div>
+            </div>
+
+            <div className="ngx-step">
+              <span className="ngx-step-num">5</span>
+              <div>
+                <strong>Verify all containers are healthy</strong>
+                <pre className="ngx-code">{`docker compose ps
+# All services should show status: Up (healthy)`}</pre>
+              </div>
             </div>
           </div>
-
-          <p className="ngx-mailhog-note">
-            Outbound mail in local dev is captured by{" "}
-            <strong>MailHog</strong> at{" "}
-            <a href="http://localhost:8025" target="_blank" rel="noopener noreferrer">
-              localhost:8025
-            </a>{" "}
-            — no real email is delivered during evaluation.
-          </p>
         </div>
 
-        <div className="ngx-contact">
+        {/* ── Common last step ── */}
+        <h3>Try It Out</h3>
+        <p style={{ marginBottom: "1.25rem", lineHeight: "1.7" }}>
+          Once services are running, create an inbox and send a test message. Outbound mail in local dev is
+          captured by <strong>MailHog</strong> at{" "}
+          <a href="http://localhost:8025" target="_blank" rel="noopener noreferrer" className="ngx-inline-link">
+            localhost:8025
+          </a>{" "}
+          — no real email is delivered during evaluation.
+        </p>
+
+        <pre className="ngx-code">{`# Create org + API key — see README for full bootstrap
+export KEY=am_live_xxxx
+
+# Provision an inbox (username only — MAIL_DOMAIN is appended automatically)
+curl -X POST http://localhost:8080/v1/inboxes \\
+  -H "Authorization: Bearer $KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"address":"agent"}'
+# → inbox.email will be "agent@mail.yourdomain.com"
+
+# Send a test email
+curl -X POST http://localhost:8080/v1/inboxes/<inbox-id>/messages/send \\
+  -H "Authorization: Bearer $KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"to":[{"email":"test@example.com"}],"subject":"Hello from nGX","body_text":"It works."}'
+
+# Check MailHog web UI for the captured message
+open http://localhost:8025`}</pre>
+
+        <div className="cta-section" style={{ marginTop: "3rem" }}>
+          <h3>Commercial Licensing</h3>
           <p>
-            Interested in a commercial license or cloud deployment?{" "}
-            <a href="mailto:licensing@nyklabs.com">licensing@nyklabs.com</a>
+            nGX is free to evaluate. Production and business deployments require a commercial license.
+            Cloud hosting rights are exclusively reserved for nyklabs.com.
           </p>
+          <a href="mailto:licensing@nyklabs.com" className="cta-button">
+            Contact for Licensing →
+          </a>
         </div>
       </section>
 
       <style>{`
-        .ngx-hero {
-          margin-bottom: 1.75rem;
-        }
-        .ngx-hero h2 {
-          font-size: 2rem;
-          font-weight: 700;
-          margin-bottom: 0.4rem;
+        .ngx-title {
           display: flex;
           align-items: baseline;
           gap: 0.75rem;
           flex-wrap: wrap;
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 1.5rem;
         }
-        .ngx-subtitle {
+        .ngx-full-name {
           font-size: 1rem;
           font-weight: 400;
           color: var(--muted);
           letter-spacing: 0.02em;
         }
-        .ngx-tagline {
-          font-size: 1.1rem;
-          color: var(--text);
-          margin: 0;
-        }
 
-        .ngx-description {
+        .intro {
+          background: rgba(34,211,238,0.1);
+          border-left: 4px solid var(--accent);
+          padding: 1.5rem;
           margin-bottom: 2rem;
-          border-left: 3px solid var(--accent);
-          padding-left: 1rem;
+          border-radius: 0 8px 8px 0;
         }
-        .ngx-description p {
-          color: var(--muted);
+        .intro p {
+          margin: 0;
+          font-size: 1.05rem;
           line-height: 1.7;
-          margin-bottom: 0.75rem;
-        }
-        .ngx-description p:last-child { margin-bottom: 0; }
-        .ngx-description code {
-          color: var(--accent);
-          font-size: 0.88rem;
         }
 
-        .ngx-highlights {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
+        h3 {
+          color: var(--accent);
+          font-size: 1.3rem;
+          margin-top: 2.5rem;
+          margin-bottom: 1.25rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid rgba(34,211,238,0.3);
+        }
+
+        .utility-list {
+          list-style: none;
+          padding: 0;
           margin-bottom: 2rem;
         }
-        @media (max-width: 580px) {
-          .ngx-highlights { grid-template-columns: 1fr; }
-        }
-        .ngx-highlight-item {
-          display: flex;
-          gap: 0.75rem;
-          align-items: flex-start;
-          background: rgba(34, 211, 238, 0.05);
-          border: 1px solid rgba(34, 211, 238, 0.15);
-          border-radius: 8px;
+        .utility-list li {
           padding: 1rem;
+          margin-bottom: 1rem;
+          background: rgba(34,211,238,0.05);
+          border-left: 3px solid var(--accent);
+          border-radius: 0 6px 6px 0;
+          line-height: 1.6;
         }
-        .ngx-highlight-icon {
-          font-size: 1.4rem;
-          line-height: 1;
-          flex-shrink: 0;
-        }
-        .ngx-highlight-item strong {
-          display: block;
-          color: var(--text);
-          margin-bottom: 0.25rem;
-          font-size: 0.95rem;
-        }
-        .ngx-highlight-item p {
-          color: var(--muted);
-          font-size: 0.85rem;
-          margin: 0;
-          line-height: 1.5;
-        }
-        .ngx-highlight-item code {
+        .utility-list li strong {
           color: var(--accent);
-          font-size: 0.8rem;
+          display: block;
+          margin-bottom: 0.4rem;
+          font-size: 1rem;
+        }
+        .utility-list li code {
+          font-family: 'Courier New', monospace;
+          font-size: 0.88rem;
+          color: var(--text);
+          background: rgba(0,0,0,0.3);
+          padding: 0.1em 0.4em;
+          border-radius: 3px;
         }
 
-        .ngx-repo-link {
+        .ngx-repo-row {
           display: flex;
           align-items: center;
           gap: 1.25rem;
           flex-wrap: wrap;
           margin-bottom: 2.5rem;
         }
-        .ngx-btn {
-          display: inline-block;
-          background: var(--accent);
-          color: #0f172a;
-          font-weight: 700;
-          padding: 0.55rem 1.25rem;
-          border-radius: 6px;
-          text-decoration: none;
-          font-size: 0.95rem;
-          white-space: nowrap;
-          transition: opacity 0.15s;
-        }
-        .ngx-btn:hover { opacity: 0.85; }
         .ngx-license-note {
+          font-size: 0.85rem;
           color: var(--muted);
-          font-size: 0.82rem;
         }
 
-        .ngx-section {
-          margin-bottom: 2rem;
+        .ngx-tabs {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+          margin-bottom: 2.5rem;
         }
-        .ngx-section h3 {
-          color: var(--accent);
-          font-size: 1.15rem;
-          margin-bottom: 0.6rem;
+        .ngx-option {
+          background: rgba(17,24,39,0.6);
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 12px;
+          padding: 1.5rem;
         }
-        .ngx-section > p {
+        .ngx-option-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+        }
+        .ngx-option-badge {
+          background: var(--accent);
+          color: #0f172a;
+          font-size: 0.75rem;
+          font-weight: 700;
+          padding: 0.2rem 0.6rem;
+          border-radius: 4px;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+        .ngx-option-title {
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: var(--text);
+        }
+        .ngx-option-desc {
+          font-size: 0.9rem;
           color: var(--muted);
           margin-bottom: 1.25rem;
-          font-size: 0.95rem;
+          line-height: 1.6;
         }
 
         .ngx-step {
@@ -303,6 +350,7 @@ curl -X POST http://localhost:8080/v1/inboxes/<id>/messages/send \\
           align-items: flex-start;
           margin-bottom: 1.25rem;
         }
+        .ngx-step:last-child { margin-bottom: 0; }
         .ngx-step-num {
           flex-shrink: 0;
           width: 1.75rem;
@@ -315,48 +363,74 @@ curl -X POST http://localhost:8080/v1/inboxes/<id>/messages/send \\
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-top: 0.1rem;
+          margin-top: 0.15rem;
         }
         .ngx-step strong {
           display: block;
           color: var(--text);
-          margin-bottom: 0.4rem;
+          margin-bottom: 0.5rem;
           font-size: 0.95rem;
         }
+
         .ngx-code {
-          background: #0a0f1a;
-          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.1);
           border-radius: 6px;
-          padding: 0.75rem 1rem;
-          color: #a3e635;
-          font-size: 0.8rem;
-          line-height: 1.6;
+          padding: 0.85rem 1rem;
+          color: var(--text);
+          font-family: 'Courier New', monospace;
+          font-size: 0.82rem;
+          line-height: 1.65;
           overflow-x: auto;
           white-space: pre;
           margin: 0;
         }
 
-        .ngx-mailhog-note {
-          color: var(--muted);
-          font-size: 0.85rem;
-          margin-top: 1rem;
-          padding: 0.65rem 1rem;
-          background: rgba(255,255,255,0.03);
-          border-radius: 6px;
-        }
-        .ngx-mailhog-note a {
+        .ngx-inline-link {
           color: var(--accent);
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
 
-        .ngx-contact {
-          border-top: 1px solid rgba(255,255,255,0.08);
-          padding-top: 1.25rem;
-          margin-top: 0.5rem;
-          color: var(--muted);
-          font-size: 0.9rem;
+        .cta-section {
+          background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(34,211,238,0.05));
+          border: 1px solid rgba(34,211,238,0.3);
+          border-radius: 12px;
+          padding: 2rem;
+          text-align: center;
         }
-        .ngx-contact a {
-          color: var(--accent);
+        .cta-section h3 {
+          margin-top: 0;
+          border: none;
+          padding: 0;
+        }
+        .cta-section p {
+          font-size: 1rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.7;
+          color: var(--muted);
+        }
+        .cta-button {
+          display: inline-block;
+          background: var(--accent);
+          color: #0f172a;
+          padding: 0.75rem 2rem;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 1rem;
+          transition: all 0.3s;
+        }
+        .cta-button:hover {
+          background: #06b6d4;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(34,211,238,0.3);
+        }
+
+        @media (max-width: 600px) {
+          .ngx-title { font-size: 1.5rem; }
+          .ngx-repo-row { flex-direction: column; align-items: flex-start; }
+          .ngx-code { font-size: 0.75rem; }
         }
       `}</style>
     </main>
