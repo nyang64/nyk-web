@@ -67,7 +67,16 @@ export default function ChatWidget() {
       {open && (
         <div className="chat-panel">
           <div className="chat-header">
-            <span>Amy</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <img
+                src="https://api.dicebear.com/9.x/lorelei/svg?seed=Amy&backgroundColor=6366f1"
+                alt="Amy"
+                width="28"
+                height="28"
+                style={{ borderRadius: "50%", flexShrink: 0 }}
+              />
+              Amy
+            </span>
             <button
               className="chat-close"
               onClick={() => setOpen(false)}
@@ -80,8 +89,9 @@ export default function ChatWidget() {
           <div className="chat-messages">
             {messages.length === 0 && (
               <p className="chat-welcome">
-                Hi, I'm Amy — NYK Labs' AI assistant. I know our products
-                inside out, but feel free to ask me anything.
+                Hi, I'm Amy — NykLabs' AI assistant. Ask me about NykLabs
+                (e.g. <em>give me an overview of your products</em>) or
+                anything outside — news, crypto prices, you name it.
               </p>
             )}
             {messages.map((m, i) => (
@@ -126,7 +136,15 @@ export default function ChatWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-label="Chat with NYK Assistant"
       >
-        {open ? "✕" : "💬"}
+        {open ? "✕" : (
+          <img
+            src="https://api.dicebear.com/9.x/lorelei/svg?seed=Amy&backgroundColor=6366f1"
+            alt="Amy"
+            width="52"
+            height="52"
+            style={{ borderRadius: "50%", display: "block" }}
+          />
+        )}
       </button>
 
       <style>{`
@@ -137,7 +155,7 @@ export default function ChatWidget() {
           width: 3.25rem;
           height: 3.25rem;
           border-radius: 50%;
-          background: var(--accent);
+          background: transparent;
           color: #0f172a;
           border: none;
           font-size: 1.4rem;
@@ -145,6 +163,8 @@ export default function ChatWidget() {
           z-index: 998;
           display: flex;
           align-items: center;
+          overflow: hidden;
+          padding: 0;
           justify-content: center;
           box-shadow: 0 4px 16px rgba(34,211,238,0.35);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
