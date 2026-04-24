@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const CHAT_API = "https://rui4vxq763zvd7flyslkbr6g7i0cdeud.lambda-url.us-west-2.on.aws/chat";
-const BRIDGE_SECRET = "9a2b3a97590dc2904c094a1afbf73a5c693dd3d340b2276b98033f2000ba99e4";
+const CHAT_API = "https://web.agent-mx.cc/v1/chat/completions";
 const SESSION_KEY = "nyk-chat-session";
 
 function getSessionId(): string {
@@ -45,12 +44,15 @@ export default function ChatWidget() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Bridge-Secret": BRIDGE_SECRET,
+          "x-openclaw-session-key": getSessionId(),
         },
-        body: JSON.stringify({ message: text, session_id: getSessionId() }),
+        body: JSON.stringify({
+          model: "openclaw/default",
+          messages: [{ role: "user", content: text }],
+        }),
       });
       const data = await res.json();
-      const reply = data.text || data.error || "No response received.";
+      const reply = data.choices?.[0]?.message?.content || data.error?.message || "No response received.";
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
     } catch (err) {
       console.error("[ChatWidget] fetch error:", err);
