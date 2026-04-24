@@ -50,6 +50,7 @@ export default function ChatWidget() {
           model: "openclaw/default",
           messages: [{ role: "user", content: text }],
         }),
+        signal: AbortSignal.timeout(175000),
       });
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content || data.error?.message || "No response received.";
